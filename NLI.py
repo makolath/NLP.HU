@@ -19,8 +19,8 @@ logger = logging.getLogger()
 
 def parse_args():
 	parser = argparse.ArgumentParser(description='Native Language Identification', epilog='By\nMatan Kolath\nMerav Mazouz')
-	parser.add_argument('-t', '--text', type=str, help='Path to the text chunks', required=True)
-	parser.add_argument('-p', '--pos', type=str, help='Path to the pos chunks', required=True)
+	parser.add_argument('-t', '--text', type=str, help='Path to the text chunks')
+	parser.add_argument('-p', '--pos', type=str, help='Path to the pos chunks')
 	parser.add_argument('-c', '--threads', type=int, default=2, help='Number of threads to use to train')
 	parser.add_argument('-i', '--load-in', type=str, default=None, help='load in sample from file and vocabulary')
 	parser.add_argument('-w', '--write-in', type=str, default=None, help='write in sample to file')
@@ -72,7 +72,7 @@ def extract_features_bow(paths, vocab=None, features_count=1000):
 
 
 def extract_features_pos(paths, vocab=None, features_count=1000):
-	logger.info('Extracting bow')
+	logger.info('Extracting pos')
 	vectorizer = TfidfVectorizer(input='filename', encoding='utf-8', decode_error='ignore', ngram_range=(3, 3), max_features=features_count, dtype=np.float32, vocabulary=vocab)
 	if vocab is not None:
 		logger.info('Using vocab')
@@ -84,7 +84,7 @@ def extract_features_pos(paths, vocab=None, features_count=1000):
 
 
 def extract_features_char3(paths, vocab=None, features_count=1000):
-	logger.info('Extracting bow')
+	logger.info('Extracting char3')
 	vectorizer = TfidfVectorizer(input='filename', encoding='utf-8', decode_error='ignore', ngram_range=(3, 3), analyzer='char', max_features=features_count, dtype=np.float32, vocabulary=vocab)
 	if vocab is not None:
 		logger.info('Using vocab')
@@ -205,7 +205,7 @@ class NLI:
 		features_per_type = []
 
 		for i, feature_type in enumerate(self.feature_types):
-			logger.info('Extracting type:', type)
+			logger.info('Extracting type:' + feature_type)
 			features = None
 			vocab = None
 			if feature_type == 'bow':
@@ -216,6 +216,7 @@ class NLI:
 				features, vocab = extract_features_pos(all_pos_paths)
 			elif feature_type == 'fw':
 				assert i == 0, 'When extracting function words, they should be extracted first'
+				logger.info('extracting fw using bow')
 				features = extract_features_bow(all_text_paths, vocab=self.vocabs[0])       # i should always be zero
 			else:
 				logger.warning('Unknown features type')
@@ -239,7 +240,7 @@ class NLI:
 		features_per_type = []
 
 		for i, feature_type in enumerate(self.feature_types):
-			logger.info('Extracting type:', type)
+			logger.info('Extracting type:' + feature_type)
 			features = None
 			if feature_type == 'bow':
 				features = extract_features_bow(all_text_paths, vocab=self.vocabs[i])
@@ -249,6 +250,7 @@ class NLI:
 				features = extract_features_pos(all_pos_paths, vocab=self.vocabs[i])
 			elif feature_type == 'fw':
 				assert i == 0, 'When extracting function words, they should be extracted first'
+				logger.info('extracting fw using bow')
 				features = extract_features_bow(all_text_paths, vocab=self.vocabs[0])   # i should always be zero
 			else:
 				logger.warning('Unknown features type')
