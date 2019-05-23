@@ -10,6 +10,7 @@ from scipy import sparse
 from sklearn import linear_model
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.model_selection import cross_val_score
+from sklearn.metrics import accuracy_score
 
 import countries_native_family
 import en_function_words
@@ -66,7 +67,7 @@ def extract_features_bow(paths, vocab=None, features_count=1000):
 		logger.info('Using vocab')
 		return vectorizer.fit_transform(paths)
 	else:
-		logger.info('extracting', features_count, 'features')
+		logger.info('extracting ' + str(features_count) + ' features')
 		features = vectorizer.fit_transform(paths)
 		return features, vectorizer.vocabulary_
 
@@ -78,7 +79,7 @@ def extract_features_pos(paths, vocab=None, features_count=1000):
 		logger.info('Using vocab')
 		return vectorizer.fit_transform(paths)
 	else:
-		logger.info('extracting', features_count, 'features')
+		logger.info('extracting ' + str(features_count) + ' features')
 		features = vectorizer.fit_transform(paths)
 		return features, vectorizer.vocabulary_
 
@@ -90,7 +91,7 @@ def extract_features_char3(paths, vocab=None, features_count=1000):
 		logger.info('Using vocab')
 		return vectorizer.fit_transform(paths)
 	else:
-		logger.info('extracting', features_count, 'features')
+		logger.info('extracting ' + str(features_count) + ' features')
 		features = vectorizer.fit_transform(paths)
 		return features, vectorizer.vocabulary_
 
@@ -129,19 +130,29 @@ class NLI:
 
 	def write_in_features(self, file):
 		logger.info('Writing in sample features')
-		sparse.save_npz(file, self.in_sample_feature)
+		sparse.save_npz(file + "_features.npz", self.in_sample_feature)
+		np.savez_compressed(file + "_targets.npz", is_native=self.in_is_native_target, lang_family=self.in_lang_family_target, native_lang=self.in_native_lang_target)
 
 	def write_out_features(self, file):
 		logger.info('Writing out of sample features')
-		sparse.save_npz(file, self.out_sample_feature)
+		sparse.save_npz(file + "_features.npz", self.out_sample_feature)
+		np.savez_compressed(file + "_targets.npz", is_native=self.out_is_native_target, lang_family=self.out_lang_family_target, native_lang=self.out_native_lang_target)
 
 	def load_in_features(self, file):
 		logger.info('Loading in sample features')
-		self.in_sample_feature = sparse.load_npz(file)
+		self.in_sample_feature = sparse.load_npz(file + "_features.npz")
+		in_targets = np.load(file + "_targets.npz")
+		self.in_is_native_target = in_targets['is_native']
+		self.in_lang_family_target = in_targets['lang_family']
+		self.in_native_lang_target = in_targets['native_lang']
 
 	def load_out_features(self, file):
 		logger.info('Loading out of sample features')
 		self.out_sample_feature = sparse.load_npz(file)
+		out_targets = np.load(file + "_targets.npz")
+		self.out_is_native_target = out_targets['is_native']
+		self.out_lang_family_target = out_targets['lang_family']
+		self.out_native_lang_target = out_targets['native_lang']
 
 	def set_function_words(self, words):
 		logger.info('Setting Function words')
@@ -210,7 +221,7 @@ class NLI:
 			vocab = None
 			if feature_type == 'bow':
 				features, vocab = extract_features_bow(all_text_paths)
-			elif feature_type == 'char':
+			elif feature_type == 'char3':
 				features, vocab = extract_features_char3(all_text_paths)
 			elif feature_type == 'pos':
 				features, vocab = extract_features_pos(all_pos_paths)
@@ -240,7 +251,7 @@ class NLI:
 		features_per_type = []
 
 		for i, feature_type in enumerate(self.feature_types):
-			logger.info('Extracting type:' + feature_type)
+			logger.info('Extracting type: ' + feature_type)
 			features = None
 			if feature_type == 'bow':
 				features = extract_features_bow(all_text_paths, vocab=self.vocabs[i])
@@ -308,36 +319,30 @@ class NLI:
 
 	def calc_10_fold_score(self):
 		logger.info('Calculating 10 fold scores')
+		score = np.average(cross_val_score(self.model_native_lang, self.in_sample_feature, self.in_native_lang_target, cv=10)) * 100
+		logger.info("Native language speaker score: " + str(score))
+
+		score = np.average(cross_val_score(self.model_lang_family, self.in_sample_feature, self.in_lang_family_target, cv=10)) * 100
+		logger.info("Language family score: " + str(score))
+
+		score = np.average(cross_val_score(self.model_is_native, self.in_sample_feature, self.in_is_native_target, cv=10)) * 100
+		logger.info("Is native speaker: " + str(score))
+
+	def out_accuracy_score(self):
+		logger.info('Calculating accuracy score for out of sample')
 		logger.info("Native language speaker score:")
-		score = np.average(
-			cross_val_score(self.model_native_lang, self.in_sample_feature, self.in_native_lang_target, cv=10)) * 100
+		predictions = self.model_native_lang.predict(self.out_sample_feature)
+		score = accuracy_score(self.out_native_lang_target, predictions)
 		logger.info(score)
 
 		logger.info("Language family score:")
-		score = np.average(
-			cross_val_score(self.model_lang_family, self.in_sample_feature, self.in_lang_family_target, cv=10)) * 100
+		predictions = self.model_lang_family.predict(self.out_sample_feature)
+		score = accuracy_score(self.out_lang_family_target, predictions)
 		logger.info(score)
 
 		logger.info("Is native speaker:")
-		score = np.average(
-			cross_val_score(self.model_is_native, self.in_sample_feature, self.in_is_native_target, cv=10)) * 100
-		logger.info(score)
-
-	def calc_10_fold_score_out(self):
-		logger.info('Calculating 10 fold scores for out of sample')
-		logger.info("Native language speaker score:")
-		score = np.average(
-			cross_val_score(self.model_native_lang, self.out_sample_feature, self.out_native_lang_target, cv=10)) * 100
-		logger.info(score)
-
-		logger.info("Language family score:")
-		score = np.average(
-			cross_val_score(self.model_lang_family, self.out_sample_feature, self.out_lang_family_target, cv=10)) * 100
-		logger.info(score)
-
-		logger.info("Is native speaker:")
-		score = np.average(
-			cross_val_score(self.model_is_native, self.out_sample_feature, self.out_is_native_target, cv=10)) * 100
+		predictions = self.model_is_native.predict(self.out_sample_feature)
+		score = accuracy_score(self.out_is_native_target, predictions)
 		logger.info(score)
 
 
@@ -361,12 +366,11 @@ def main(text_source, pos_source, num_threads, load_in, load_out, write_in, writ
 	else:
 		obj.features_in_sample()
 		obj.dump_vocabs()
+		obj.target_in_sample()
 
 	logger.info('write in to file is: ' + str(write_in))
 	if write_in is not None:
 		obj.write_in_features(write_in)
-
-	obj.target_in_sample()
 
 	if read_model:
 		obj.load_models()
@@ -381,12 +385,13 @@ def main(text_source, pos_source, num_threads, load_in, load_out, write_in, writ
 		obj.load_out_features(load_out)
 	else:
 		obj.features_out_sample()
+		obj.target_out_sample()
 
 	logger.info('write out to file is: ' + str(write_out))
 	if write_out is not None:
 		obj.write_out_features(write_out)
 
-	obj.calc_10_fold_score_out()
+	obj.out_accuracy_score()
 
 
 if __name__ == '__main__':
