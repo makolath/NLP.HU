@@ -22,13 +22,14 @@ def parse_args():
 	parser = argparse.ArgumentParser(description='Native Language Identification', epilog='By\nMatan Kolath\nMerav Mazouz')
 	parser.add_argument('-t', '--text', type=str, help='Path to the text chunks')
 	parser.add_argument('-p', '--pos', type=str, help='Path to the pos chunks')
+	parser.add_argument('-s', '--skip-files-collection', action='store_true', default=False, help='Skip reading folder for paths')
 	parser.add_argument('-c', '--threads', type=int, default=2, help='Number of threads to use to train')
-	parser.add_argument('-i', '--load-in', type=str, default=None, help='load in sample from file and vocabulary')
-	parser.add_argument('-w', '--write-in', type=str, default=None, help='write in sample to file')
-	parser.add_argument('-o', '--load-out', type=str, default=None, help='load out of sample from file')
-	parser.add_argument('-z', '--write-out', type=str, default=None, help='write out of sample to file')
-	parser.add_argument('-m', '--read-models', action="store_true", default=False, help='read models from file')
-	parser.add_argument('-f', '--features', action="append", help='what type of features to use, can be given multiple times for multiple features\nLegal values: bow, pos, char3, fw', required=True)
+	parser.add_argument('-i', '--load-in', type=str, default=None, help='Load in sample from file and vocabulary')
+	parser.add_argument('-w', '--write-in', type=str, default=None, help='Write in sample to file')
+	parser.add_argument('-o', '--load-out', type=str, default=None, help='Load out of sample from file')
+	parser.add_argument('-z', '--write-out', type=str, default=None, help='Write out of sample to file')
+	parser.add_argument('-m', '--read-models', action="store_true", default=False, help='Read models from file')
+	parser.add_argument('-f', '--features', action="append", help='What type of features to use, can be given multiple times for multiple features\nLegal values: bow, pos, char3, fw', required=True)
 	return parser.parse_args()
 
 
@@ -97,7 +98,7 @@ def extract_features_char3(paths, vocab=None, features_count=1000):
 
 
 class NLI:
-	def __init__(self, text, pos, threads, types):
+	def __init__(self, text, pos, threads, types, skip):
 		self.threads = threads
 		self.feature_types = types
 
@@ -115,16 +116,17 @@ class NLI:
 		self.out_lang_family_target = None
 		self.out_native_lang_target = None
 
-		self.euro_path = os.path.join(text, 'europe_data')
-		self.euro_pos_path = os.path.join(pos, 'europe_data')
-		self.non_euro_path = os.path.join(text, 'non_europe_data')
-		self.non_euro_pos_path = os.path.join(pos, 'non_europe_data')
-		logger.info('extracting in sample paths')
-		self.text_chunks_paths = get_chunks_folders(self.euro_path)
-		self.pos_chunks_paths = get_chunks_folders(self.euro_pos_path)
-		logger.info('extracting out sample paths')
-		self.out_text_chunks_paths = get_chunks_folders(self.non_euro_path)
-		self.out_pos_chunks_paths = get_chunks_folders(self.non_euro_pos_path)
+		if not skip:
+			self.euro_path = os.path.join(text, 'europe_data')
+			self.euro_pos_path = os.path.join(pos, 'europe_data')
+			self.non_euro_path = os.path.join(text, 'non_europe_data')
+			self.non_euro_pos_path = os.path.join(pos, 'non_europe_data')
+			logger.info('extracting in sample paths')
+			self.text_chunks_paths = get_chunks_folders(self.euro_path)
+			self.pos_chunks_paths = get_chunks_folders(self.euro_pos_path)
+			logger.info('extracting out sample paths')
+			self.out_text_chunks_paths = get_chunks_folders(self.non_euro_path)
+			self.out_pos_chunks_paths = get_chunks_folders(self.non_euro_pos_path)
 
 		self.vocabs = []
 
@@ -346,7 +348,7 @@ class NLI:
 		logger.info(score)
 
 
-def main(text_source, pos_source, num_threads, load_in, load_out, write_in, write_out, read_model, feature_types):
+def main(text_source, pos_source, num_threads, load_in, load_out, write_in, write_out, read_model, feature_types, skip_files):
 	set_log()
 	logger.info('start')
 
@@ -355,7 +357,7 @@ def main(text_source, pos_source, num_threads, load_in, load_out, write_in, writ
 			i = feature_types.index('fw')
 			feature_types[0], feature_types[i] = feature_types[i], feature_types[0]
 
-	obj = NLI(text_source, pos_source, num_threads, feature_types)
+	obj = NLI(text_source, pos_source, num_threads, feature_types, skip_files)
 	if feature_types[0] == 'fw':
 		obj.set_function_words(en_function_words.FUNCTION_WORDS)
 
@@ -396,4 +398,4 @@ def main(text_source, pos_source, num_threads, load_in, load_out, write_in, writ
 
 if __name__ == '__main__':
 	args = parse_args()
-	main(args.text, args.pos, args.threads, args.load_in, args.load_out, args.write_in, args.write_out, args.read_models, args.features)
+	main(args.text, args.pos, args.threads, args.load_in, args.load_out, args.write_in, args.write_out, args.read_models, args.features, args.skip_files_collection)
