@@ -10,7 +10,6 @@ raw data used for classification is available [here](https://drive.google.com/dr
 Processed data (pre-computed features and their targets) are available [here](https://drive.google.com/open?id=1_wJEDkDpRTX9_EOwHJrISUH4rzp5qLlX)
 
 ### Results
-#### Stage A
 ##### Countires used
 The following countries data was used
 * Albania
@@ -47,6 +46,7 @@ The following countries data was used
 * UK
 * Ukraine
 * US
+#### Stage A
 ##### Features used
 For features we used the following
 * function word's term frequency
@@ -58,7 +58,10 @@ The features were trained using Logistic regression classifier
 ##### Results
 ###### In-Domain (data from r/europe)
 Results for all countries are ten-fold cross validation
+
 Results per-country are accuracy
+
+Combined Accuracy is at the bottom row
 
 | Country | Is Native | Language Family | Native Language |
 | --- | :---: | :---: | :---: |
@@ -97,3 +100,47 @@ Results per-country are accuracy
 | UK | | | |
 | Ukraine | | | |
 | US | | | |
+| Total | | | |
+
+###### Out-of-Domain
+Results per-country are accuracy
+
+Combined Accuracy is at the bottom row
+
+| Country | Is Native | Language Family | Native Language |
+| --- | :---: | :---: | :---: |
+| Albania | | | |
+| Australia | | | |
+| Austria | | | |
+| Bosnia | | | |
+| Bulgaria | | | |
+| Croatia | | | |
+| Czech Republic | | | |
+| Denmark | | | |
+| Estonia | | | |
+| Finland | | | |
+| France | | | |
+| Germany | | | |
+| Greece | | | |
+| Hungary | | | |
+| Iceland | | | |
+| Ireland | | | |
+| Italy | | | |
+| Latvia | | | |
+| Lithuania | | | |
+| Netherlands | | | |
+| Norway | | | |
+| Poland | | | |
+| Portugal | | | |
+| Romania | | | |
+| Russia | | | |
+| Serbia | | | |
+| Slovakia | | | |
+| Slovenia | | | |
+| Spain | | | |
+| Sweden | | | |
+| Turkey | | | |
+| UK | | | |
+| Ukraine | | | |
+| US | | | |
+| Total | | | |

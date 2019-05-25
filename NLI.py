@@ -1,4 +1,5 @@
 import argparse
+import gc
 import logging
 import os
 import pickle
@@ -9,8 +10,8 @@ import numpy as np
 from scipy import sparse
 from sklearn import linear_model
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.model_selection import cross_val_score
 from sklearn.metrics import accuracy_score
+from sklearn.model_selection import cross_val_score
 
 import countries_native_family
 import en_function_words
@@ -25,8 +26,8 @@ def parse_args():
 	parser.add_argument('-c', '--threads', type=int, default=2, help='Number of threads to use to train')
 	parser.add_argument('-i', '--load-in', type=str, default=None, help='Load in sample from file and vocabulary')
 	parser.add_argument('-w', '--write-in', type=str, default=None, help='Write in sample to file')
-	parser.add_argument('-o', '--load-out', type=str, default=None, help='Load out of sample from file')
-	parser.add_argument('-z', '--write-out', type=str, default=None, help='Write out of sample to file')
+	parser.add_argument('-o', '--load-out', type=str, default=None, help='Load out of sample from folder')
+	parser.add_argument('-z', '--write-out', type=str, default=None, help='Write out of sample to folder')
 	parser.add_argument('-m', '--read-models', action="store_true", default=False, help='Read models from file')
 	parser.add_argument('-f', '--features', action="append", help='What type of features to use, can be given multiple times for multiple features\nLegal values: bow, pos, char3, fw', required=True)
 	return parser.parse_args()
@@ -96,6 +97,23 @@ def extract_features_char3(paths, vocab=None, features_count=1000):
 		return features, vectorizer.vocabulary_
 
 
+def write_out_features(country, target_is_native, target_lang_family, target_native_lang, features):
+	logger.info('Writing country out of sample features')
+	sparse.save_npz(country + "_features.npz", features)
+	np.savez_compressed(country + "_targets.npz", is_native=target_is_native, lang_family=target_lang_family, native_lang=target_native_lang)
+
+
+def read_country_from_file(write_out, country):
+	logger.info("Reading country out of sample features from file")
+	prefix = os.path.join(write_out, country)
+	features = sparse.load_npz(prefix + "_features.npz")
+	in_targets = np.load(prefix + "_targets.npz")
+	in_is_native_target = in_targets['is_native']
+	in_lang_family_target = in_targets['lang_family']
+	in_native_lang_target = in_targets['native_lang']
+	return features, in_native_lang_target, in_lang_family_target, in_is_native_target
+
+
 class NLI:
 	def __init__(self, text, pos, threads, types):
 		self.threads = threads
@@ -105,15 +123,10 @@ class NLI:
 		self.model_lang_family = None
 		self.model_native_lang = None
 		self.in_sample_feature = None
-		self.out_sample_feature = None
 
 		self.in_is_native_target = None
 		self.in_lang_family_target = None
 		self.in_native_lang_target = None
-
-		self.out_is_native_target = None
-		self.out_lang_family_target = None
-		self.out_native_lang_target = None
 
 		if text:
 			self.euro_path = os.path.join(text, 'europe_data')
@@ -131,17 +144,12 @@ class NLI:
 			logger.info('extracting pos out sample paths')
 			self.out_pos_chunks_paths = get_chunks_folders(self.non_euro_pos_path)
 
-		self.vocabs = []
+		self.vocabs = {}
 
 	def write_in_features(self, file):
 		logger.info('Writing in sample features')
 		sparse.save_npz(file + "_features.npz", self.in_sample_feature)
 		np.savez_compressed(file + "_targets.npz", is_native=self.in_is_native_target, lang_family=self.in_lang_family_target, native_lang=self.in_native_lang_target)
-
-	def write_out_features(self, file):
-		logger.info('Writing out of sample features')
-		sparse.save_npz(file + "_features.npz", self.out_sample_feature)
-		np.savez_compressed(file + "_targets.npz", is_native=self.out_is_native_target, lang_family=self.out_lang_family_target, native_lang=self.out_native_lang_target)
 
 	def load_in_features(self, file):
 		logger.info('Loading in sample features')
@@ -151,14 +159,6 @@ class NLI:
 		self.in_lang_family_target = in_targets['lang_family']
 		self.in_native_lang_target = in_targets['native_lang']
 
-	def load_out_features(self, file):
-		logger.info('Loading out of sample features')
-		self.out_sample_feature = sparse.load_npz(file)
-		out_targets = np.load(file + "_targets.npz")
-		self.out_is_native_target = out_targets['is_native']
-		self.out_lang_family_target = out_targets['lang_family']
-		self.out_native_lang_target = out_targets['native_lang']
-
 	def save_features(self, features, prefix=""):
 		for i, mat in enumerate(features):
 			logger.info("Saving " + self.feature_types[i] + " features")
@@ -167,7 +167,7 @@ class NLI:
 
 	def set_function_words(self, words):
 		logger.info('Setting Function words')
-		self.vocabs.append({word: i for i, word in enumerate(words)})
+		self.vocabs['fw'] = ({word: i for i, word in enumerate(words)})
 
 	def write_models(self):
 		logger.info('Writing models')
@@ -197,21 +197,19 @@ class NLI:
 
 	def dump_vocabs(self):
 		logger.info('write vocabs')
-		for i, feature_type in enumerate(self.feature_types):
-			logger.info('writing ' + feature_type + ' vocab')
+		for feature_type in self.feature_types:
+			logger.info('writing ' + feature_type + '_vocab.pkl')
 			filename = feature_type + '_vocab.pkl'
 			f = open(filename, 'wb')
-			pickle.dump(self.vocabs[i], f)
+			pickle.dump(self.vocabs[feature_type], f)
 			f.close()
 
 	def read_vocabs(self):
-		logger.info('reading vocabs')
-		for i, feature_type in enumerate(self.feature_types):
-			logger.info('reading ' + feature_type + ' vocab')
+		for feature_type in self.feature_types:
 			filename = feature_type + '_vocab.pkl'
+			logger.info('reading ' + filename)
 			f = open(filename, 'rb')
-			self.vocabs.append(pickle.load(f))
-			pickle.dump(self.vocabs[i], f)
+			self.vocabs[feature_type] = (pickle.load(f))
 			f.close()
 
 	def features_in_sample(self):
@@ -225,8 +223,7 @@ class NLI:
 		logger.info("in sample files: " + str(len(all_text_paths)))
 
 		features_per_type = []
-
-		for i, feature_type in enumerate(self.feature_types):
+		for feature_type in self.feature_types:
 			logger.info('Extracting type:' + feature_type)
 			features = None
 			vocab = None
@@ -238,9 +235,8 @@ class NLI:
 				elif feature_type == 'pos':
 					features, vocab = extract_features_pos(all_pos_paths)
 				elif feature_type == 'fw':
-					assert i == 0, 'When extracting function words, they should be extracted first'
 					logger.info('extracting fw using bow')
-					features = extract_features_bow(all_text_paths, vocab=self.vocabs[0])       # i should always be zero
+					features = extract_features_bow(all_text_paths, vocab=self.vocabs['fw'])
 				else:
 					logger.warning('Unknown features type')
 			except MemoryError as me:
@@ -251,49 +247,69 @@ class NLI:
 				raise me
 
 			if vocab is not None:
-				self.vocabs.append(vocab)
+				self.vocabs[feature_type] = vocab
 			features_per_type.append(features)
 
 		self.in_sample_feature = sparse.hstack(features_per_type).tocsr()
 
-	def features_out_sample(self):
+	def test_out_paths(self, load_out, write_out):
 		logger.info('Extracting out sample features')
-		all_text_paths = []
-		all_pos_paths = []
 		for country in sorted(self.out_text_chunks_paths.keys()):
-			all_text_paths.extend(p for s in sorted(self.out_text_chunks_paths[country].keys()) for p in self.out_text_chunks_paths[country][s])
-		for country in sorted(self.out_pos_chunks_paths.keys()):
-			all_pos_paths.extend(p for s in sorted(self.out_pos_chunks_paths[country].keys()) for p in self.out_pos_chunks_paths[country][s])
-		logger.info("out sample files: " + str(len(all_text_paths)))
+			country_features = None
+			target_native_lang, target_lang_family, target_is_native = None, None, None
 
-		features_per_type = []
+			if load_out is None:
+				logger.info("Extracting out features from files")
+				country_text_paths = [p for s in sorted(self.out_text_chunks_paths[country].keys()) for p in self.out_text_chunks_paths[country][s]]
+				country_pos_paths = [p for s in sorted(self.out_pos_chunks_paths[country].keys()) for p in self.out_pos_chunks_paths[country][s]]
+				logger.info("out sample files for country: " + country + " " + str(len(country_text_paths)))
+				logger.info("Extracting features for country " + country)
+				features_per_type = []
 
-		for i, feature_type in enumerate(self.feature_types):
-			logger.info('Extracting type: ' + feature_type)
-			features = None
-			try:
-				if feature_type == 'bow':
-					features = extract_features_bow(all_text_paths, vocab=self.vocabs[i])
-				elif feature_type == 'char3':
-					features = extract_features_char3(all_text_paths, vocab=self.vocabs[i])
-				elif feature_type == 'pos':
-					features = extract_features_pos(all_pos_paths, vocab=self.vocabs[i])
-				elif feature_type == 'fw':
-					assert i == 0, 'When extracting function words, they should be extracted first'
-					logger.info('extracting fw using bow')
-					features = extract_features_bow(all_text_paths, vocab=self.vocabs[0])   # i should always be zero
-				else:
-					logger.warning('Unknown features type')
-			except MemoryError as me:
-				logger.error("got memory error")
-				logger.exception(me)
-				logger.info("saving existing out features")
-				self.save_features(features_per_type, prefix="out_")
-				raise me
+				for feature_type in self.feature_types:
+					logger.info('Extracting type: ' + feature_type)
+					features = None
 
-			features_per_type.append(features)
+					if feature_type == 'bow':
+						features = extract_features_bow(country_text_paths, vocab=self.vocabs[feature_type])
+					elif feature_type == 'char3':
+						features = extract_features_char3(country_text_paths, vocab=self.vocabs[feature_type])
+					elif feature_type == 'pos':
+						features = extract_features_pos(country_pos_paths, vocab=self.vocabs[feature_type])
+					elif feature_type == 'fw':
+						logger.info('extracting fw using bow')
+						features = extract_features_bow(country_text_paths, vocab=self.vocabs['fw'])   # i should always be zero
+					else:
+						logger.warning('Unknown features type')
 
-		self.out_sample_feature = sparse.hstack(features_per_type)
+					features_per_type.append(features)
+
+				country_features = sparse.hstack(features_per_type)
+				target_native_lang, target_lang_family, target_is_native = self.get_target_for_country(country)
+
+			elif write_out is not None:
+				logger.info("reading out features from file")
+				country_features, target_native_lang, target_lang_family, target_is_native = read_country_from_file(write_out, country)
+
+			write_out_features(country, target_is_native, target_lang_family, target_native_lang, country_features)
+
+			logger.info("testing results of country " + country)
+			logger.info("Native language speaker score:")
+			predictions = self.model_native_lang.predict(country_features)
+			score = accuracy_score(target_native_lang, predictions)
+			logger.info(score)
+
+			logger.info("Language family score:")
+			predictions = self.model_lang_family.predict(country_features)
+			score = accuracy_score(target_lang_family, predictions)
+			logger.info(score)
+
+			logger.info("Is native speaker:")
+			predictions = self.model_is_native.predict(country_features)
+			score = accuracy_score(target_is_native, predictions)
+			logger.info(score)
+
+			gc.collect()
 
 	def target_in_sample(self):
 		logger.info('Creating in sample targets')
@@ -315,25 +331,21 @@ class NLI:
 		self.in_lang_family_target = np.array(temp_in_lang_family, order='C')
 		self.in_is_native_target = np.array(temp_in_is_native, order='C')
 
-	def target_out_sample(self):
+	def get_target_for_country(self, country):
 		logger.info('Creating out sample targets')
 		temp_out_native_lang = []
 		temp_out_lang_family = []
 		temp_out_is_native = []
-		for country in sorted(self.out_text_chunks_paths.keys()):
-			c_lang = countries_native_family.lang_enum[countries_native_family.country_language[country]]
-			lang_family = countries_native_family.family_enum[
-				countries_native_family.language_family[countries_native_family.country_language[country]]]
-			is_native = int(lang_family == 0)
-			for user in sorted(self.out_text_chunks_paths[country].keys()):
-				for _ in self.out_text_chunks_paths[country][user]:
-					temp_out_native_lang.append(c_lang)
-					temp_out_lang_family.append(lang_family)
-					temp_out_is_native.append(is_native)
+		c_lang = countries_native_family.lang_enum[countries_native_family.country_language[country]]
+		lang_family = countries_native_family.family_enum[countries_native_family.language_family[countries_native_family.country_language[country]]]
+		is_native = int(lang_family == 0)
+		for user in sorted(self.out_text_chunks_paths[country].keys()):
+			for _ in self.out_text_chunks_paths[country][user]:
+				temp_out_native_lang.append(c_lang)
+				temp_out_lang_family.append(lang_family)
+				temp_out_is_native.append(is_native)
 
-		self.out_native_lang_target = np.array(temp_out_native_lang, order='C')
-		self.out_lang_family_target = np.array(temp_out_lang_family, order='C')
-		self.out_is_native_target = np.array(temp_out_is_native, order='C')
+		return np.array(temp_out_native_lang, order='C'), np.array(temp_out_lang_family, order='C'), np.array(temp_out_is_native, order='C')
 
 	def train(self):
 		logger.info('Training model for "Is native speaker"')
@@ -354,42 +366,19 @@ class NLI:
 		score = np.average(cross_val_score(self.model_is_native, self.in_sample_feature, self.in_is_native_target, cv=10)) * 100
 		logger.info("Is native speaker: " + str(score))
 
-	def out_accuracy_score(self):
-		logger.info('Calculating accuracy score for out of sample')
-		logger.info("Native language speaker score:")
-		predictions = self.model_native_lang.predict(self.out_sample_feature)
-		score = accuracy_score(self.out_native_lang_target, predictions)
-		logger.info(score)
-
-		logger.info("Language family score:")
-		predictions = self.model_lang_family.predict(self.out_sample_feature)
-		score = accuracy_score(self.out_lang_family_target, predictions)
-		logger.info(score)
-
-		logger.info("Is native speaker:")
-		predictions = self.model_is_native.predict(self.out_sample_feature)
-		score = accuracy_score(self.out_is_native_target, predictions)
-		logger.info(score)
-
 
 def main(text_source, pos_source, num_threads, load_in, load_out, write_in, write_out, read_model, feature_types):
 	set_log()
 	logger.info('start')
 
-	if 'fw' in feature_types:
-		if len(feature_types) > 1:      # switch the features so that fw is always first
-			i = feature_types.index('fw')
-			feature_types[0], feature_types[i] = feature_types[i], feature_types[0]
-
 	obj = NLI(text_source, pos_source, num_threads, feature_types)
-	if feature_types[0] == 'fw':
-		obj.set_function_words(en_function_words.FUNCTION_WORDS)
 
 	logger.info('load in from file is: ' + str(load_in))
 	if load_in is not None:
 		obj.load_in_features(load_in)
 		obj.read_vocabs()
 	else:
+		obj.set_function_words(en_function_words.FUNCTION_WORDS)
 		obj.features_in_sample()
 		obj.dump_vocabs()
 		obj.target_in_sample()
@@ -406,18 +395,8 @@ def main(text_source, pos_source, num_threads, load_in, load_out, write_in, writ
 
 	obj.calc_10_fold_score()
 
-	logger.info('load out from file is: ' + str(load_out))
-	if load_out is not None:
-		obj.load_out_features(load_out)
-	else:
-		obj.features_out_sample()
-		obj.target_out_sample()
-
-	logger.info('write out to file is: ' + str(write_out))
-	if write_out is not None:
-		obj.write_out_features(write_out)
-
-	obj.out_accuracy_score()
+	logger.info("Testing out of sample countries")
+	obj.test_out_paths(load_out, write_out)
 
 
 if __name__ == '__main__':
