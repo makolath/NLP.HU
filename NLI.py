@@ -22,7 +22,6 @@ def parse_args():
 	parser = argparse.ArgumentParser(description='Native Language Identification', epilog='By\nMatan Kolath\nMerav Mazouz')
 	parser.add_argument('-t', '--text', type=str, help='Path to the text chunks')
 	parser.add_argument('-p', '--pos', type=str, help='Path to the pos chunks')
-	parser.add_argument('-s', '--skip-files-collection', action='store_true', default=False, help='Skip reading folder for paths')
 	parser.add_argument('-c', '--threads', type=int, default=2, help='Number of threads to use to train')
 	parser.add_argument('-i', '--load-in', type=str, default=None, help='Load in sample from file and vocabulary')
 	parser.add_argument('-w', '--write-in', type=str, default=None, help='Write in sample to file')
@@ -98,7 +97,7 @@ def extract_features_char3(paths, vocab=None, features_count=1000):
 
 
 class NLI:
-	def __init__(self, text, pos, threads, types, skip):
+	def __init__(self, text, pos, threads, types):
 		self.threads = threads
 		self.feature_types = types
 
@@ -116,16 +115,20 @@ class NLI:
 		self.out_lang_family_target = None
 		self.out_native_lang_target = None
 
-		if not skip:
+		if text:
 			self.euro_path = os.path.join(text, 'europe_data')
-			self.euro_pos_path = os.path.join(pos, 'europe_data')
 			self.non_euro_path = os.path.join(text, 'non_europe_data')
-			self.non_euro_pos_path = os.path.join(pos, 'non_europe_data')
-			logger.info('extracting in sample paths')
+			logger.info('extracting text in sample paths')
 			self.text_chunks_paths = get_chunks_folders(self.euro_path)
-			self.pos_chunks_paths = get_chunks_folders(self.euro_pos_path)
-			logger.info('extracting out sample paths')
+			logger.info('extracting text out sample paths')
 			self.out_text_chunks_paths = get_chunks_folders(self.non_euro_path)
+
+		if pos:
+			self.euro_pos_path = os.path.join(pos, 'europe_data')
+			self.non_euro_pos_path = os.path.join(pos, 'non_europe_data')
+			logger.info('extracting pos in sample paths')
+			self.pos_chunks_paths = get_chunks_folders(self.euro_pos_path)
+			logger.info('extracting pos out sample paths')
 			self.out_pos_chunks_paths = get_chunks_folders(self.non_euro_pos_path)
 
 		self.vocabs = []
@@ -155,6 +158,12 @@ class NLI:
 		self.out_is_native_target = out_targets['is_native']
 		self.out_lang_family_target = out_targets['lang_family']
 		self.out_native_lang_target = out_targets['native_lang']
+
+	def save_features(self, features, prefix=""):
+		for i, mat in enumerate(features):
+			logger.info("Saving " + self.feature_types[i] + " features")
+			filename = prefix + self.feature_types[i] + "_features.npz"
+			sparse.save_npz(filename, mat)
 
 	def set_function_words(self, words):
 		logger.info('Setting Function words')
@@ -221,18 +230,25 @@ class NLI:
 			logger.info('Extracting type:' + feature_type)
 			features = None
 			vocab = None
-			if feature_type == 'bow':
-				features, vocab = extract_features_bow(all_text_paths)
-			elif feature_type == 'char3':
-				features, vocab = extract_features_char3(all_text_paths)
-			elif feature_type == 'pos':
-				features, vocab = extract_features_pos(all_pos_paths)
-			elif feature_type == 'fw':
-				assert i == 0, 'When extracting function words, they should be extracted first'
-				logger.info('extracting fw using bow')
-				features = extract_features_bow(all_text_paths, vocab=self.vocabs[0])       # i should always be zero
-			else:
-				logger.warning('Unknown features type')
+			try:
+				if feature_type == 'bow':
+					features, vocab = extract_features_bow(all_text_paths)
+				elif feature_type == 'char3':
+					features, vocab = extract_features_char3(all_text_paths)
+				elif feature_type == 'pos':
+					features, vocab = extract_features_pos(all_pos_paths)
+				elif feature_type == 'fw':
+					assert i == 0, 'When extracting function words, they should be extracted first'
+					logger.info('extracting fw using bow')
+					features = extract_features_bow(all_text_paths, vocab=self.vocabs[0])       # i should always be zero
+				else:
+					logger.warning('Unknown features type')
+			except MemoryError as me:
+				logger.error("got memory error")
+				logger.exception(me)
+				logger.info("saving existing in features")
+				self.save_features(features_per_type, prefix="in_")
+				raise me
 
 			if vocab is not None:
 				self.vocabs.append(vocab)
@@ -255,18 +271,26 @@ class NLI:
 		for i, feature_type in enumerate(self.feature_types):
 			logger.info('Extracting type: ' + feature_type)
 			features = None
-			if feature_type == 'bow':
-				features = extract_features_bow(all_text_paths, vocab=self.vocabs[i])
-			elif feature_type == 'char3':
-				features = extract_features_char3(all_text_paths, vocab=self.vocabs[i])
-			elif feature_type == 'pos':
-				features = extract_features_pos(all_pos_paths, vocab=self.vocabs[i])
-			elif feature_type == 'fw':
-				assert i == 0, 'When extracting function words, they should be extracted first'
-				logger.info('extracting fw using bow')
-				features = extract_features_bow(all_text_paths, vocab=self.vocabs[0])   # i should always be zero
-			else:
-				logger.warning('Unknown features type')
+			try:
+				if feature_type == 'bow':
+					features = extract_features_bow(all_text_paths, vocab=self.vocabs[i])
+				elif feature_type == 'char3':
+					features = extract_features_char3(all_text_paths, vocab=self.vocabs[i])
+				elif feature_type == 'pos':
+					features = extract_features_pos(all_pos_paths, vocab=self.vocabs[i])
+				elif feature_type == 'fw':
+					assert i == 0, 'When extracting function words, they should be extracted first'
+					logger.info('extracting fw using bow')
+					features = extract_features_bow(all_text_paths, vocab=self.vocabs[0])   # i should always be zero
+				else:
+					logger.warning('Unknown features type')
+			except MemoryError as me:
+				logger.error("got memory error")
+				logger.exception(me)
+				logger.info("saving existing out features")
+				self.save_features(features_per_type, prefix="out_")
+				raise me
+
 			features_per_type.append(features)
 
 		self.out_sample_feature = sparse.hstack(features_per_type)
@@ -348,7 +372,7 @@ class NLI:
 		logger.info(score)
 
 
-def main(text_source, pos_source, num_threads, load_in, load_out, write_in, write_out, read_model, feature_types, skip_files):
+def main(text_source, pos_source, num_threads, load_in, load_out, write_in, write_out, read_model, feature_types):
 	set_log()
 	logger.info('start')
 
@@ -357,7 +381,7 @@ def main(text_source, pos_source, num_threads, load_in, load_out, write_in, writ
 			i = feature_types.index('fw')
 			feature_types[0], feature_types[i] = feature_types[i], feature_types[0]
 
-	obj = NLI(text_source, pos_source, num_threads, feature_types, skip_files)
+	obj = NLI(text_source, pos_source, num_threads, feature_types)
 	if feature_types[0] == 'fw':
 		obj.set_function_words(en_function_words.FUNCTION_WORDS)
 
@@ -398,4 +422,4 @@ def main(text_source, pos_source, num_threads, load_in, load_out, write_in, writ
 
 if __name__ == '__main__':
 	args = parse_args()
-	main(args.text, args.pos, args.threads, args.load_in, args.load_out, args.write_in, args.write_out, args.read_models, args.features, args.skip_files_collection)
+	main(args.text, args.pos, args.threads, args.load_in, args.load_out, args.write_in, args.write_out, args.read_models, args.features)
