@@ -286,12 +286,12 @@ class NLI:
 
 				country_features = sparse.hstack(features_per_type)
 				target_native_lang, target_lang_family, target_is_native = self.get_target_for_country(country)
+			else:
+				logger.info("reading out features from file: " + country)
+				country_features, target_native_lang, target_lang_family, target_is_native = read_country_from_file(load_out, country)
 
-			elif write_out is not None:
-				logger.info("reading out features from file")
-				country_features, target_native_lang, target_lang_family, target_is_native = read_country_from_file(write_out, country)
-
-			write_out_features(country, target_is_native, target_lang_family, target_native_lang, country_features)
+			if write_out is not None:
+				write_out_features(country, target_is_native, target_lang_family, target_native_lang, country_features)
 
 			logger.info("testing results of country " + country)
 			logger.info("Native language speaker score:")
