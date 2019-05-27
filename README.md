@@ -100,7 +100,7 @@ Combined Accuracy is at the bottom row
 | UK | 45.31% | 63.61% | 76.74% | 101250 |
 | US | 30.86% | 50.73% | 67.08% | 64540 |
 | Ukraine | 97.61% | 72.39% | 31.92% | 12890 |
-| Total | | | | |
+| Total | 49.77% | | | |
 
 ###### Out-of-Domain
 Results per-country are accuracy
@@ -143,4 +143,4 @@ Combined Accuracy is at the bottom row
 | UK | 32.35% | 53.10% | 73.15% | 3418210 |
 | US | 21.01% | 42.34% | 65.67% | 5436530 |
 | Ukraine | 95.23% | 55.73% | 14.69% | 120050 |
-| Total |49.77%| | | |
+| Total || | | |
