@@ -8,6 +8,10 @@ vocabularies are available [here](https://drive.google.com/open?id=1Dq1HrPnJX1Lv
 raw data used for classification is available [here](https://drive.google.com/drive/folders/125RAHvCIHBR-jAUnIhqzWhdxh0mQ_fcv)
 
 ### Results
+##### Classifier
+All models were trained using Logistic Regression classifier
+
+The classified unit was constructed of 10 consecutive sentences
 ##### Countries used
 The following countries data was used
 * Albania
@@ -44,15 +48,13 @@ The following countries data was used
 * UK
 * US
 * Ukraine
-#### Stage A
+#### Baseline
 ##### Features used
 For features we used the following
 * function word's term frequency
 * 1000 most common words
 * 1000 most common part of speech trigrams
 * 1000 most common char trigrams
-##### Classifier
-The model was trained using Logistic Regression classifier
 
 The classified unit was constructed of 10 consecutive sentences
 ##### Results
@@ -144,3 +146,89 @@ Combined Accuracy is at the bottom row
 | US | 21.01% | 42.34% | 65.67% | 5436530 |
 | Ukraine | 95.23% | 55.73% | 14.69% | 120050 |
 | Total | 57.64% | 42.35% | 43.01% | 20064120 |
+
+All the results below are using pre-trained word2vec model
+#### Bert
+##### Results
+###### In-Domain (data from r/europe)
+| Country | Is Native | Language Family | Native Language | Number of Chunks |
+| --- | :---: | :---: | :---: | :---: |
+| All | 75.40% | 24.59% | 0.48% | - |
+| Albania | | | | 3920 |
+| Australia | | | | 4930 |
+| Austria | | | | 14150 |
+| Bosnia | | | | 10410 |
+| Bulgaria | | | | 10670 |
+| Croatia | | | | 10570 |
+| Czech Republic | | | | 15200 |
+| Denmark | | | | 35520 |
+| Estonia| | | | 15850 |
+| Finland | | | | 27670 |
+| France | | | | 38140 |
+| Germany | | | | 85150 |
+| Greece | | | | 20300 |
+| Hungary | | | | 10160 |
+| Iceland | | | | 3800 |
+| Ireland | | | | 27960 |
+| Italy | | | | 14700 |
+| Latvia | | | | 12690 |
+| Lithuania | | | | 10400 |
+| Netherlands | | | | 52400 |
+| Norway | | | | 10560 |
+| Poland | | | | 38890 |
+| Portugal | | | | 17470 | 
+| Romania | | | | 32710 |
+| Russia | | | | 13170 |
+| Serbia | | | | 7580 |
+| Slovakia | | | | 12560 |
+| Slovenia | | | | 8690 |
+| Spain | | | | 22260 |
+| Sweden | | | | 26860 |
+| Turkey | | | | 13910 |
+| UK | | | | 101250 |
+| US | | | | 64540 |
+| Ukraine | | | | 12890 |
+| Total | | | | 807930 |
+
+###### Out-of-Domain
+Results per-country are accuracy
+
+Combined Accuracy is at the bottom row
+
+| Country | Is Native | Language Family | Native Language | Number of Chunks |
+| --- | :---: | :---: | :---: | :---: |
+| Albania | | | | 35630 |
+| Australia | | | | 421020 |
+| Austria | | | | 294280 |
+| Bosnia | | | | 71010 |
+| Bulgaria | | | | 119990 |
+| Croatia | | | | 143900 |
+| Czech Republic | | | | 175320 |
+| Denmark | | | | 681270 |
+| Estonia | | | | 110720 |
+| Finland | | | | 575030 |
+| France | | | | 560100 |
+| Germany | | | | 1587250 |
+| Greece | | | | 205540 |
+| Hungary | | | | 144520 |
+| Iceland | | | | 136420 |
+| Ireland | | | | 919200 |
+| Italy | | | | 246910 |
+| Latvia | | | | 90890 |
+| Lithuania | | | | 135670 |
+| Netherlands | | | | 1246100 |
+| Norway | | | | 413880 |
+| Poland | | | | 437470 |
+| Portugal | | | | 311950 |
+| Romania | | | | 292770 |
+| Russia | | | | 162160 |
+| Serbia | | | | 105890 |
+| Slovakia | | | | 110050 |
+| Slovenia | | | | 73020 |
+| Spain | | | | 330950 |
+| Sweden | | | | 772480 |
+| Turkey | | | | 177940 |
+| UK | | | | 3418210 |
+| US | | | | 5436530 |
+| Ukraine | | | | 120050 |
+| Total | | | | 20064120 |

@@ -35,7 +35,7 @@ def parse_args():
 	parser.add_argument('-z', '--write-out', type=str, default=None, help='Write out of sample to folder')
 	parser.add_argument('-m', '--read-models', action="store_true", default=False, help='Read models from file')
 	parser.add_argument('-v', '--model', type=str, default=None, help='Use the word2vec model specified by path')
-	parser.add_argument('-f', '--features', action="append", help='What type of features to use, can be given multiple times for multiple features\nLegal values: bow, pos, char3, fw', required=True)
+	parser.add_argument('-f', '--features', action="append", help='What type of features to use, can be given multiple times for multiple features\nLegal values: bow, pos, char3, fw, w2v', required=True)
 	return parser.parse_args()
 
 
@@ -208,6 +208,7 @@ class NLI:
 	def load_in_features(self, file):
 		logger.info('Loading in sample features')
 		self.in_sample_feature = sparse.load_npz(file + "_features.npz")
+		logging.info("loaded in features of size " + str(self.in_sample_feature.shape))
 		in_targets = np.load(file + "_targets.npz")
 		self.in_is_native_target = in_targets['is_native']
 		self.in_lang_family_target = in_targets['lang_family']
@@ -260,11 +261,12 @@ class NLI:
 
 	def read_vocabs(self):
 		for feature_type in self.feature_types:
-			filename = feature_type + '_vocab.pkl'
-			logger.info('reading ' + filename)
-			f = open(filename, 'rb')
-			self.vocabs[feature_type] = (pickle.load(f))
-			f.close()
+			if feature_type != 'w2v':
+				filename = feature_type + '_vocab.pkl'
+				logger.info('reading ' + filename)
+				f = open(filename, 'rb')
+				self.vocabs[feature_type] = (pickle.load(f))
+				f.close()
 
 	def features_in_sample(self):
 		logger.info('Extracting in sample features')
@@ -336,7 +338,7 @@ class NLI:
 						logger.info('extracting fw using bow')
 						features = extract_features_bow(country_text_paths, vocab=self.vocabs['fw'])   # i should always be zero
 					elif feature_type == 'w2v':
-						features = sparse.csr_matrix(extract_features_word2vec(country_text_paths, self.word2vec_model))
+						features = sparse.csr_matrix(extract_features_word2vec(country_text_paths))
 					else:
 						logger.warning('Unknown features type')
 
@@ -439,8 +441,7 @@ def main(text_source, pos_source, num_threads, load_in, load_out, write_in, writ
 	else:
 		classifier.train()
 		classifier.write_models()
-
-	classifier.calc_10_fold_score()
+		classifier.calc_10_fold_score()
 
 	logger.info("Testing out of sample countries")
 	classifier.test_out_paths(load_out, write_out)
