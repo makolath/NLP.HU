@@ -5,8 +5,10 @@ import os
 import pickle
 import re
 import sys
+import concurrent.futures   # for paralleling word2vec
 
 import numpy as np
+from gensim.models import KeyedVectors
 from scipy import sparse
 from sklearn import linear_model
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -17,6 +19,9 @@ import countries_native_family
 import en_function_words
 
 logger = logging.getLogger()
+
+word2vec_model = None       # need to use global variables to bypass GIL when multiprocessing
+known_words = {}
 
 
 def parse_args():
@@ -29,12 +34,13 @@ def parse_args():
 	parser.add_argument('-o', '--load-out', type=str, default=None, help='Load out of sample from folder')
 	parser.add_argument('-z', '--write-out', type=str, default=None, help='Write out of sample to folder')
 	parser.add_argument('-m', '--read-models', action="store_true", default=False, help='Read models from file')
+	parser.add_argument('-v', '--model', type=str, default=None, help='Use the word2vec model specified by path')
 	parser.add_argument('-f', '--features', action="append", help='What type of features to use, can be given multiple times for multiple features\nLegal values: bow, pos, char3, fw', required=True)
 	return parser.parse_args()
 
 
 def set_log():
-	logging.basicConfig(stream=sys.stdout, format='%(asctime)s %(message)s', level=logging.INFO)
+	logging.basicConfig(stream=sys.stdout, format='%(asctime)s %(levelname)-8s %(message)s', level=logging.INFO)
 
 
 def get_chunks_folders(path):
@@ -46,7 +52,7 @@ def get_chunks_folders(path):
 		for user in os.listdir(country_full_path):
 			paths = []
 			full_user_path = os.path.join(country_full_path, user)
-			for i, chuck in enumerate(os.listdir(full_user_path)):
+			for chuck in os.listdir(full_user_path):
 				full_chuck_path = os.path.join(full_user_path, chuck)
 				paths.append(full_chuck_path)
 			users_paths[user] = paths
@@ -97,6 +103,34 @@ def extract_features_char3(paths, vocab=None, features_count=1000):
 		return features, vectorizer.vocabulary_
 
 
+def extract_word2vec_from_text(file_path):
+	features = np.empty((1, 300), dtype=np.float32)
+	text = list(filter(None, re.split(r'[ |\n]', open(file_path, 'r', encoding='utf-8').read())))
+	count = 0
+	for word in text:
+		if word in known_words:
+			count += 1
+			features = np.add(features, word2vec_model[word])
+	if count:
+		features = np.divide(features, count)
+		features[~np.isfinite(features)] = 0
+		return features
+	else:
+		features[~np.isfinite(features)] = 0
+		return features
+
+
+def extract_features_word2vec(paths):
+	logger.info("Extracting word2vec features")
+	all_features = np.empty((len(paths), word2vec_model.vector_size), dtype=np.float32)
+
+	with concurrent.futures.ProcessPoolExecutor() as executor:
+		for i, feature_line in enumerate(executor.map(extract_word2vec_from_text, paths, chunksize=len(paths)//16)):
+			all_features[i] = feature_line
+
+	return np.nan_to_num(all_features, copy=False)
+
+
 def write_out_features(country, target_is_native, target_lang_family, target_native_lang, features):
 	logger.info('Writing country out of sample features')
 	sparse.save_npz(country + "_features.npz", features)
@@ -121,6 +155,14 @@ def get_target_for_country(country, country_chunks):
 	is_native = int(lang_family == 0)
 
 	return np.full((country_chunks, 1), c_lang), np.full((country_chunks, 1), lang_family), np.full((country_chunks, 1), is_native)
+
+
+def load_word2vec_model(model_path):
+	logger.info("Loading word2vec model from: " + model_path)
+	global known_words, word2vec_model
+	word2vec_model = KeyedVectors.load_word2vec_format(model_path, binary=True)
+	logger.info("The word vector size is: " + str(word2vec_model.vector_size))
+	known_words = set(word2vec_model.vocab.keys())
 
 
 class NLI:
@@ -152,6 +194,9 @@ class NLI:
 			self.pos_chunks_paths = get_chunks_folders(self.euro_pos_path)
 			logger.info('extracting pos out sample paths')
 			self.out_pos_chunks_paths = get_chunks_folders(self.non_euro_pos_path)
+		else:
+			self.out_pos_chunks_paths = None
+			self.pos_chunks_paths = None
 
 		self.vocabs = {}
 
@@ -206,11 +251,11 @@ class NLI:
 
 	def dump_vocabs(self):
 		logger.info('write vocabs')
-		for feature_type in self.feature_types:
+		for feature_type, vocab in self.vocabs.items():
 			logger.info('writing ' + feature_type + '_vocab.pkl')
 			filename = feature_type + '_vocab.pkl'
 			f = open(filename, 'wb')
-			pickle.dump(self.vocabs[feature_type], f)
+			pickle.dump(vocab, f)
 			f.close()
 
 	def read_vocabs(self):
@@ -227,13 +272,14 @@ class NLI:
 		all_pos_paths = []
 		for country in sorted(self.text_chunks_paths.keys()):
 			all_text_paths.extend(p for s in sorted(self.text_chunks_paths[country].keys()) for p in self.text_chunks_paths[country][s])
-		for country in sorted(self.pos_chunks_paths.keys()):
-			all_pos_paths.extend(p for s in sorted(self.pos_chunks_paths[country].keys()) for p in self.pos_chunks_paths[country][s])
+		if self.pos_chunks_paths is not None:
+			for country in sorted(self.pos_chunks_paths.keys()):
+				all_pos_paths.extend(p for s in sorted(self.pos_chunks_paths[country].keys()) for p in self.pos_chunks_paths[country][s])
 		logger.info("in sample files: " + str(len(all_text_paths)))
 
 		features_per_type = []
 		for feature_type in self.feature_types:
-			logger.info('Extracting type:' + feature_type)
+			logger.info('Extracting type: ' + feature_type)
 			features = None
 			vocab = None
 			try:
@@ -246,6 +292,8 @@ class NLI:
 				elif feature_type == 'fw':
 					logger.info('extracting fw using bow')
 					features = extract_features_bow(all_text_paths, vocab=self.vocabs['fw'])
+				elif feature_type == 'w2v':
+					features = sparse.csr_matrix(extract_features_word2vec(all_text_paths))
 				else:
 					logger.warning('Unknown features type')
 			except MemoryError as me:
@@ -258,8 +306,10 @@ class NLI:
 			if vocab is not None:
 				self.vocabs[feature_type] = vocab
 			features_per_type.append(features)
-
-		self.in_sample_feature = sparse.hstack(features_per_type).tocsr()
+		if len(features_per_type) > 1:
+			self.in_sample_feature = sparse.hstack(features_per_type).tocsr()
+		else:
+			self.in_sample_feature = features_per_type[0]
 
 	def test_out_paths(self, load_out, write_out):
 		logger.info('Extracting out sample features')
@@ -267,7 +317,7 @@ class NLI:
 			if load_out is None:
 				logger.info("Extracting out features from files")
 				country_text_paths = [p for s in sorted(self.out_text_chunks_paths[country].keys()) for p in self.out_text_chunks_paths[country][s]]
-				country_pos_paths = [p for s in sorted(self.out_pos_chunks_paths[country].keys()) for p in self.out_pos_chunks_paths[country][s]]
+				country_pos_paths = [p for s in sorted(self.out_pos_chunks_paths[country].keys()) for p in self.out_pos_chunks_paths[country][s]] if self.out_pos_chunks_paths is not None else None
 				logger.info("out sample files for country: " + country + " " + str(len(country_text_paths)))
 				logger.info("Extracting features for country " + country)
 				features_per_type = []
@@ -285,12 +335,16 @@ class NLI:
 					elif feature_type == 'fw':
 						logger.info('extracting fw using bow')
 						features = extract_features_bow(country_text_paths, vocab=self.vocabs['fw'])   # i should always be zero
+					elif feature_type == 'w2v':
+						features = sparse.csr_matrix(extract_features_word2vec(country_text_paths, self.word2vec_model))
 					else:
 						logger.warning('Unknown features type')
 
 					features_per_type.append(features)
-
-				country_features = sparse.hstack(features_per_type)
+				if len(features_per_type) > 1:
+					country_features = sparse.hstack(features_per_type)
+				else:
+					country_features = features_per_type[0]
 				target_native_lang, target_lang_family, target_is_native = get_target_for_country(country, len(country_text_paths))
 			else:
 				logger.info("reading out features from file: " + country)
@@ -357,38 +411,41 @@ class NLI:
 		logger.info("Is native speaker: " + str(score))
 
 
-def main(text_source, pos_source, num_threads, load_in, load_out, write_in, write_out, read_model, feature_types):
+def main(text_source, pos_source, num_threads, load_in, load_out, write_in, write_out, read_model, feature_types, model):
 	set_log()
 	logger.info('start')
 
-	obj = NLI(text_source, pos_source, num_threads, feature_types)
+	classifier = NLI(text_source, pos_source, num_threads, feature_types)
+	if model is not None:
+		load_word2vec_model(model)
 
 	logger.info('load in from file is: ' + str(load_in))
 	if load_in is not None:
-		obj.load_in_features(load_in)
-		obj.read_vocabs()
+		classifier.load_in_features(load_in)
+		classifier.read_vocabs()
 	else:
-		obj.set_function_words(en_function_words.FUNCTION_WORDS)
-		obj.features_in_sample()
-		obj.dump_vocabs()
-		obj.target_in_sample()
+		if 'fw' in feature_types:
+			classifier.set_function_words(en_function_words.FUNCTION_WORDS)
+		classifier.features_in_sample()
+		classifier.dump_vocabs()
+		classifier.target_in_sample()
 
 	logger.info('write in to file is: ' + str(write_in))
 	if write_in is not None:
-		obj.write_in_features(write_in)
+		classifier.write_in_features(write_in)
 
 	if read_model:
-		obj.load_models()
+		classifier.load_models()
 	else:
-		obj.train()
-		obj.write_models()
+		classifier.train()
+		classifier.write_models()
 
-	obj.calc_10_fold_score()
+	classifier.calc_10_fold_score()
 
 	logger.info("Testing out of sample countries")
-	obj.test_out_paths(load_out, write_out)
+	classifier.test_out_paths(load_out, write_out)
 
 
 if __name__ == '__main__':
 	args = parse_args()
-	main(args.text, args.pos, args.threads, args.load_in, args.load_out, args.write_in, args.write_out, args.read_models, args.features)
+	main(args.text, args.pos, args.threads, args.load_in, args.load_out, args.write_in, args.write_out, args.read_models, args.features, args.model)
