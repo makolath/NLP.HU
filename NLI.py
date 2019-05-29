@@ -114,6 +114,15 @@ def read_country_from_file(write_out, country):
 	return features, in_native_lang_target, in_lang_family_target, in_is_native_target
 
 
+def get_target_for_country(country, country_chunks):
+	logger.info('Creating targets for country ' + country)
+	c_lang = countries_native_family.lang_enum[countries_native_family.country_language[country]]
+	lang_family = countries_native_family.family_enum[countries_native_family.language_family[countries_native_family.country_language[country]]]
+	is_native = int(lang_family == 0)
+
+	return np.full((country_chunks, 1), c_lang), np.full((country_chunks, 1), lang_family), np.full((country_chunks, 1), is_native)
+
+
 class NLI:
 	def __init__(self, text, pos, threads, types):
 		self.threads = threads
@@ -255,9 +264,6 @@ class NLI:
 	def test_out_paths(self, load_out, write_out):
 		logger.info('Extracting out sample features')
 		for country in sorted(self.out_text_chunks_paths.keys()):
-			country_features = None
-			target_native_lang, target_lang_family, target_is_native = None, None, None
-
 			if load_out is None:
 				logger.info("Extracting out features from files")
 				country_text_paths = [p for s in sorted(self.out_text_chunks_paths[country].keys()) for p in self.out_text_chunks_paths[country][s]]
@@ -285,7 +291,7 @@ class NLI:
 					features_per_type.append(features)
 
 				country_features = sparse.hstack(features_per_type)
-				target_native_lang, target_lang_family, target_is_native = self.get_target_for_country(country)
+				target_native_lang, target_lang_family, target_is_native = get_target_for_country(country, len(country_text_paths))
 			else:
 				logger.info("reading out features from file: " + country)
 				country_features, target_native_lang, target_lang_family, target_is_native = read_country_from_file(load_out, country)
@@ -330,22 +336,6 @@ class NLI:
 		self.in_native_lang_target = np.array(temp_in_native_lang, order='C')
 		self.in_lang_family_target = np.array(temp_in_lang_family, order='C')
 		self.in_is_native_target = np.array(temp_in_is_native, order='C')
-
-	def get_target_for_country(self, country):
-		logger.info('Creating out sample targets')
-		temp_out_native_lang = []
-		temp_out_lang_family = []
-		temp_out_is_native = []
-		c_lang = countries_native_family.lang_enum[countries_native_family.country_language[country]]
-		lang_family = countries_native_family.family_enum[countries_native_family.language_family[countries_native_family.country_language[country]]]
-		is_native = int(lang_family == 0)
-		for user in sorted(self.out_text_chunks_paths[country].keys()):
-			for _ in self.out_text_chunks_paths[country][user]:
-				temp_out_native_lang.append(c_lang)
-				temp_out_lang_family.append(lang_family)
-				temp_out_is_native.append(is_native)
-
-		return np.array(temp_out_native_lang, order='C'), np.array(temp_out_lang_family, order='C'), np.array(temp_out_is_native, order='C')
 
 	def train(self):
 		logger.info('Training model for "Is native speaker"')
