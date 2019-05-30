@@ -45,15 +45,16 @@ def set_log():
 
 def get_chunks_folders(path):
 	countries_paths = {}
+	sep = os.path.sep       # using sep because os path join slowness
 	for country_path in os.listdir(path):
 		users_paths = {}
-		country_full_path = os.path.join(path, country_path)
+		country_full_path = path + sep + country_path
 		country = re.match(r'reddit\.([a-zA-Z]*)\.txt\.tok\.clean', country_path).group(1)
 		for user in os.listdir(country_full_path):
 			paths = []
-			full_user_path = os.path.join(country_full_path, user)
+			full_user_path = country_full_path + sep + user
 			for chuck in os.listdir(full_user_path):
-				full_chuck_path = os.path.join(full_user_path, chuck)
+				full_chuck_path = full_user_path + sep + chuck
 				paths.append(full_chuck_path)
 			users_paths[user] = paths
 		countries_paths[country] = users_paths
@@ -105,19 +106,12 @@ def extract_features_char3(paths, vocab=None, features_count=1000):
 
 def extract_word2vec_from_text(file_path):
 	features = np.empty((1, 300), dtype=np.float32)
-	text = list(filter(None, re.split(r'[ |\n]', open(file_path, 'r', encoding='utf-8').read())))
-	count = 0
+	text = list(filter(lambda x: x != "" and x in known_words, re.split(r'[ |\n]', open(file_path, 'r', encoding='utf-8').read())))
 	for word in text:
-		if word in known_words:
-			count += 1
-			features = np.add(features, word2vec_model[word])
-	if count:
-		features = np.divide(features, count)
-		features[~np.isfinite(features)] = 0
-		return features
-	else:
-		features[~np.isfinite(features)] = 0
-		return features
+		features = np.add(features, word2vec_model[word])
+	if len(text):
+		features = np.divide(features, len(text))
+	return features
 
 
 def extract_features_word2vec(paths):
@@ -131,10 +125,10 @@ def extract_features_word2vec(paths):
 	return np.nan_to_num(all_features, copy=False)
 
 
-def write_out_features(country, target_is_native, target_lang_family, target_native_lang, features):
+def write_out_features(country, target_is_native, target_lang_family, target_native_lang, features, path="./"):
 	logger.info('Writing country out of sample features')
-	sparse.save_npz(country + "_features.npz", features)
-	np.savez_compressed(country + "_targets.npz", is_native=target_is_native, lang_family=target_lang_family, native_lang=target_native_lang)
+	sparse.save_npz(path + country + "_features.npz", features)
+	np.savez_compressed(path + country + "_targets.npz", is_native=target_is_native, lang_family=target_lang_family, native_lang=target_native_lang)
 
 
 def read_country_from_file(write_out, country):
@@ -353,7 +347,7 @@ class NLI:
 				country_features, target_native_lang, target_lang_family, target_is_native = read_country_from_file(load_out, country)
 
 			if write_out is not None:
-				write_out_features(country, target_is_native, target_lang_family, target_native_lang, country_features)
+				write_out_features(country, target_is_native, target_lang_family, target_native_lang, country_features, write_out)
 
 			logger.info("testing results of country " + country)
 			logger.info("Native language speaker score:")
