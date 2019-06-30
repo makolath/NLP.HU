@@ -5,6 +5,7 @@ import os
 import pickle
 import re
 import sys
+import random
 import concurrent.futures   # for paralleling word2vec
 
 import numpy as np
@@ -36,6 +37,7 @@ def parse_args():
 	parser.add_argument('-m', '--read-models', action="store_true", default=False, help='Read models from file')
 	parser.add_argument('-v', '--model', type=str, default=None, help='Use the word2vec model specified by path')
 	parser.add_argument('-f', '--features', action="append", help='What type of features to use, can be given multiple times for multiple features\nLegal values: bow, pos, char3, fw, w2v', required=True)
+	parser.add_argument('-b', '--binary-model', action="store_true", default=False, help="Use when the word2vec model is in binary format (.bin)")
 	return parser.parse_args()
 
 
@@ -47,16 +49,12 @@ def get_chunks_folders(path):
 	countries_paths = {}
 	sep = os.path.sep       # using sep because os path join slowness
 	for country_path in os.listdir(path):
-		users_paths = {}
+		users_paths = []
 		country_full_path = path + sep + country_path
 		country = re.match(r'reddit\.([a-zA-Z]*)\.txt\.tok\.clean', country_path).group(1)
 		for user in os.listdir(country_full_path):
-			paths = []
 			full_user_path = country_full_path + sep + user
-			for chuck in os.listdir(full_user_path):
-				full_chuck_path = full_user_path + sep + chuck
-				paths.append(full_chuck_path)
-			users_paths[user] = paths
+			users_paths.extend([full_user_path + sep + chuck for chuck in os.listdir(full_user_path)])
 		countries_paths[country] = users_paths
 	return countries_paths
 
@@ -105,12 +103,10 @@ def extract_features_char3(paths, vocab=None, features_count=1000):
 
 
 def extract_word2vec_from_text(file_path):
-	features = np.empty((1, 300), dtype=np.float32)
+	features = np.empty((1, word2vec_model.vector_size), dtype=np.float32)
 	text = list(filter(lambda x: x != "" and x in known_words, re.split(r'[ |\n]', open(file_path, 'r', encoding='utf-8').read())))
 	for word in text:
 		features = np.add(features, word2vec_model[word])
-	if len(text):
-		features = np.divide(features, len(text))
 	return features
 
 
@@ -151,10 +147,10 @@ def get_target_for_country(country, country_chunks):
 	return np.full((country_chunks, 1), c_lang), np.full((country_chunks, 1), lang_family), np.full((country_chunks, 1), is_native)
 
 
-def load_word2vec_model(model_path):
+def load_word2vec_model(model_path, binary_model=False):
 	logger.info("Loading word2vec model from: " + model_path)
 	global known_words, word2vec_model
-	word2vec_model = KeyedVectors.load_word2vec_format(model_path, binary=True)
+	word2vec_model = KeyedVectors.load_word2vec_format(model_path, binary=binary_model)
 	logger.info("The word vector size is: " + str(word2vec_model.vector_size))
 	known_words = set(word2vec_model.vocab.keys())
 
@@ -174,25 +170,26 @@ class NLI:
 		self.in_native_lang_target = None
 
 		if text:
-			self.euro_path = os.path.join(text, 'europe_data')
-			self.non_euro_path = os.path.join(text, 'non_europe_data')
+			euro_path = os.path.join(text, 'europe_data')
+			non_euro_path = os.path.join(text, 'non_europe_data')
 			logger.info('extracting text in sample paths')
-			self.text_chunks_paths = get_chunks_folders(self.euro_path)
+			self.text_chunks_paths = get_chunks_folders(euro_path)
 			logger.info('extracting text out sample paths')
-			self.out_text_chunks_paths = get_chunks_folders(self.non_euro_path)
+			self.out_text_chunks_paths = get_chunks_folders(non_euro_path)
 
 		if pos:
-			self.euro_pos_path = os.path.join(pos, 'europe_data')
-			self.non_euro_pos_path = os.path.join(pos, 'non_europe_data')
+			euro_pos_path = os.path.join(pos, 'europe_data')
+			non_euro_pos_path = os.path.join(pos, 'non_europe_data')
 			logger.info('extracting pos in sample paths')
-			self.pos_chunks_paths = get_chunks_folders(self.euro_pos_path)
+			self.pos_chunks_paths = get_chunks_folders(euro_pos_path)
 			logger.info('extracting pos out sample paths')
-			self.out_pos_chunks_paths = get_chunks_folders(self.non_euro_pos_path)
+			self.out_pos_chunks_paths = get_chunks_folders(non_euro_pos_path)
 		else:
 			self.out_pos_chunks_paths = None
 			self.pos_chunks_paths = None
 
 		self.vocabs = {}
+		logger.info("finish init")
 
 	def write_in_features(self, file):
 		logger.info('Writing in sample features')
@@ -267,10 +264,10 @@ class NLI:
 		all_text_paths = []
 		all_pos_paths = []
 		for country in sorted(self.text_chunks_paths.keys()):
-			all_text_paths.extend(p for s in sorted(self.text_chunks_paths[country].keys()) for p in self.text_chunks_paths[country][s])
+			all_text_paths.extend(self.text_chunks_paths[country])
 		if self.pos_chunks_paths is not None:
 			for country in sorted(self.pos_chunks_paths.keys()):
-				all_pos_paths.extend(p for s in sorted(self.pos_chunks_paths[country].keys()) for p in self.pos_chunks_paths[country][s])
+				all_pos_paths.extend(self.pos_chunks_paths[country])
 		logger.info("in sample files: " + str(len(all_text_paths)))
 
 		features_per_type = []
@@ -296,7 +293,7 @@ class NLI:
 				logger.error("got memory error")
 				logger.exception(me)
 				logger.info("saving existing in features")
-				self.save_features(features_per_type, prefix="in_")
+				self.save_features(features_per_type, prefix="memory_error_in_")
 				raise me
 
 			if vocab is not None:
@@ -312,8 +309,8 @@ class NLI:
 		for country in sorted(self.out_text_chunks_paths.keys()):
 			if load_out is None:
 				logger.info("Extracting out features from files")
-				country_text_paths = [p for s in sorted(self.out_text_chunks_paths[country].keys()) for p in self.out_text_chunks_paths[country][s]]
-				country_pos_paths = [p for s in sorted(self.out_pos_chunks_paths[country].keys()) for p in self.out_pos_chunks_paths[country][s]] if self.out_pos_chunks_paths is not None else None
+				country_text_paths = self.out_text_chunks_paths[country]
+				country_pos_paths = self.out_pos_chunks_paths[country]
 				logger.info("out sample files for country: " + country + " " + str(len(country_text_paths)))
 				logger.info("Extracting features for country " + country)
 				features_per_type = []
@@ -330,7 +327,7 @@ class NLI:
 						features = extract_features_pos(country_pos_paths, vocab=self.vocabs[feature_type])
 					elif feature_type == 'fw':
 						logger.info('extracting fw using bow')
-						features = extract_features_bow(country_text_paths, vocab=self.vocabs['fw'])   # i should always be zero
+						features = extract_features_bow(country_text_paths, vocab=self.vocabs['fw'])
 					elif feature_type == 'w2v':
 						features = sparse.csr_matrix(extract_features_word2vec(country_text_paths))
 					else:
@@ -372,16 +369,13 @@ class NLI:
 		temp_in_native_lang = []
 		temp_in_lang_family = []
 		temp_in_is_native = []
-		for country in sorted(self.text_chunks_paths.keys()):
+		for country, paths in sorted(self.text_chunks_paths.items()):
 			c_lang = countries_native_family.lang_enum[countries_native_family.country_language[country]]
-			lang_family = countries_native_family.family_enum[
-				countries_native_family.language_family[countries_native_family.country_language[country]]]
+			lang_family = countries_native_family.family_enum[countries_native_family.language_family[countries_native_family.country_language[country]]]
 			is_native = int(lang_family == 0)
-			for user in sorted(self.text_chunks_paths[country].keys()):
-				for _ in self.text_chunks_paths[country][user]:
-					temp_in_native_lang.append(c_lang)
-					temp_in_lang_family.append(lang_family)
-					temp_in_is_native.append(is_native)
+			temp_in_is_native.extend([is_native] * len(paths))
+			temp_in_lang_family.extend([lang_family] * len(paths))
+			temp_in_native_lang.extend([c_lang] * len(paths))
 
 		self.in_native_lang_target = np.array(temp_in_native_lang, order='C')
 		self.in_lang_family_target = np.array(temp_in_lang_family, order='C')
@@ -406,14 +400,33 @@ class NLI:
 		score = np.average(cross_val_score(self.model_is_native, self.in_sample_feature, self.in_is_native_target, cv=10)) * 100
 		logger.info("Is native speaker: " + str(score))
 
+	def down_sample_in(self):
+		logger.info('Down sampling in sample paths')
+		new_text_paths = {}
+		new_pos_paths = {}
 
-def main(text_source, pos_source, num_threads, load_in, load_out, write_in, write_out, read_model, feature_types, model):
+		min_number_chunks = min(map(lambda x: len(x), self.text_chunks_paths.values()))
+		logger.info('minimum number of chunks is: ' + str(min_number_chunks))
+
+		for country, all_country_text in self.text_chunks_paths.items():
+			if self.pos_chunks_paths is not None:
+				all_country_pos = self.pos_chunks_paths[country]
+				new_text_paths[country], new_pos_paths[country] = zip(*random.sample(list(zip(all_country_text, all_country_pos)), min_number_chunks))
+			else:
+				new_text_paths[country] = random.sample(all_country_text, min_number_chunks)
+		logger.info('Down sampling has reduced path count per country to ' + str(min_number_chunks))
+
+		self.text_chunks_paths = new_text_paths
+		self.pos_chunks_paths = new_pos_paths
+
+
+def main(text_source, pos_source, num_threads, load_in, load_out, write_in, write_out, read_model, feature_types, model, binary):
 	set_log()
 	logger.info('start')
 
 	classifier = NLI(text_source, pos_source, num_threads, feature_types)
 	if model is not None:
-		load_word2vec_model(model)
+		load_word2vec_model(model, binary)
 
 	logger.info('load in from file is: ' + str(load_in))
 	if load_in is not None:
@@ -422,6 +435,7 @@ def main(text_source, pos_source, num_threads, load_in, load_out, write_in, writ
 	else:
 		if 'fw' in feature_types:
 			classifier.set_function_words(en_function_words.FUNCTION_WORDS)
+		classifier.down_sample_in()
 		classifier.features_in_sample()
 		classifier.dump_vocabs()
 		classifier.target_in_sample()
@@ -443,4 +457,4 @@ def main(text_source, pos_source, num_threads, load_in, load_out, write_in, writ
 
 if __name__ == '__main__':
 	args = parse_args()
-	main(args.text, args.pos, args.threads, args.load_in, args.load_out, args.write_in, args.write_out, args.read_models, args.features, args.model)
+	main(args.text, args.pos, args.threads, args.load_in, args.load_out, args.write_in, args.write_out, args.read_models, args.features, args.model, args.binary_model)
