@@ -155,3 +155,54 @@ is_native_enum = {
 	'Native':       0,
 	'NonNative':    1
 }
+
+lang_num_to_family_num_enum = {
+	0: 4,       # Albania
+	1: 4,       # Armenia
+	2: 3,       # German
+	3: 0,       # English
+	4: 1,       # Bosnian
+	5: 1,       # Bulgarian
+	6: 4,       # Chinese
+	7: 1,       # Croatian
+	8: 1,       # Czech
+	9: 4,       # Greek
+	10: 3,      # Danish
+	11: 1,      # Estonian
+	12: 4,      # Finish
+	13: 2,      # French
+	14: 4,      # Georgian
+	15: 4,      # Hungarian
+	16: 3,      # Icelandic
+	17: 4,      # Hindi
+	18: 2,      # Italian
+	19: 4,      # Hebrew
+	20: 1,      # Latvian
+	21: 1,      # Lithuanian
+	22: 1,      # Macedonian
+	23: 4,      # Maltese
+	24: 2,      # Moldovan
+	25: 2,      # Spanish
+	26: 2,      # Romanian
+	27: 1,      # Montenegrin
+	28: 3,      # Dutch
+	29: 3,      # Norwegian
+	30: 1,      # Polish
+	31: 2,      # Portuguese
+	32: 1,      # Russian
+	33: 1,      # Serbian
+	34: 1,      # Slovenian
+	35: 1,      # Slovak
+	36: 3,      # Swedish
+	37: 4,      # Turkish
+	38: 1,      # Ukrainian
+	39: 4       # Vietnamese
+}
+
+family_num_to_is_native = {
+	0: 0,
+	1: 1,
+	2: 1,
+	3: 1,
+	4: 1
+}

@@ -63,7 +63,39 @@ Results for all countries are ten-fold cross validation
 
 | Country | Is Native | Language Family | Native Language |
 | --- | :---: | :---: | :---: |
-| All | 81.28% | 58.51% | 47.66% |
+| All | 84.18% | 61.80% | 47.47% |
+| Australia | 69.25% | 69.25% | 69.25% |
+| Austria | 83.54% | 53.66% | 48.49% |
+| Bosnia | 95.65% | 87.05% | 65.27% |
+| Bulgaria | 85.86 | 58.09 | 41.35% |
+| Croatia | 85.07 | 59.14 | 30.50 |
+| Czech Republic | 87.78 | 59.41 | 38.01 |
+| Denmark | 89.95 | 63.50 | 56.22 |
+| Estonia| 88.37 | 66.83 | 44.82 |
+| Finland | 82.59 | 42.61 | 37.66 |
+| France | 77.30 | 47.64 | 35.37 |
+| Germany | 83.54 | 53.66 | 48.49 |
+| Greece | 85.05 | 49.95 | 41.54 |
+| Hungary | 90.28 | 50.10 | 45.86 |
+| Ireland | 69.25 | 69.25 | 69.25 |
+| Italy | 84.03 | 54.03 | 43.63 |
+| Latvia | 94.80 | 83.20 | 57.68 |
+| Lithuania | 91.80 | 72.55 | 46.30 |
+| Netherlands | 72.94 | 42.04 | 26.22 |
+| Norway | 77.24 | 53.04 | 37.60 |
+| Poland | 89.33 | 66.30 | 41.21 |
+| Portugal | | | | 
+| Romania | | | |
+| Russia | | | |
+| Serbia | | | |
+| Slovakia | | | |
+| Slovenia | | | |
+| Spain | | | |
+| Sweden | | | |
+| Turkey | | | |
+| UK | | | |
+| US | | | |
+| Ukraine | | | |
 
 ###### Out-of-Domain
 Results per-country are accuracy
@@ -113,6 +145,38 @@ All the results below are using pre-trained word2vec model
 | Country | Is Native | Language Family | Native Language |
 | --- | :---: | :---: | :---: |
 | All | 75.40% | 24.59% | 0.48% |
+| Australia | | | |
+| Austria | | | |
+| Bosnia | | | |
+| Bulgaria | | | |
+| Croatia | | | |
+| Czech Republic | | | |
+| Denmark | | | |
+| Estonia| | | |
+| Finland | | | |
+| France | | | |
+| Germany | | | |
+| Greece | | | |
+| Hungary | | | |
+| Ireland | | | |
+| Italy | | | |
+| Latvia | | | |
+| Lithuania | | | |
+| Netherlands | | | |
+| Norway | | | |
+| Poland | | | |
+| Portugal | | | | 
+| Romania | | | |
+| Russia | | | |
+| Serbia | | | |
+| Slovakia | | | |
+| Slovenia | | | |
+| Spain | | | |
+| Sweden | | | |
+| Turkey | | | |
+| UK | | | |
+| US | | | |
+| Ukraine | | | |
 
 ###### Out-of-Domain
 Results per-country are accuracy

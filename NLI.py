@@ -14,7 +14,7 @@ from scipy import sparse
 from sklearn import linear_model
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics import accuracy_score
-from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import cross_val_predict
 
 import countries_native_family
 import en_function_words
@@ -47,7 +47,7 @@ def set_log():
 
 def get_chunks_folders(path):
 	countries_paths = {}
-	sep = os.path.sep       # using sep because os path join slowness
+	sep = os.path.sep       # using sep because os.path.join slowness
 	for country_path in os.listdir(path):
 		users_paths = []
 		country_full_path = path + sep + country_path
@@ -138,11 +138,19 @@ def read_country_from_file(write_out, country):
 	return features, in_native_lang_target, in_lang_family_target, in_is_native_target
 
 
+def nums_for_country(country):
+	lang = countries_native_family.country_language[country]
+	c_lang = countries_native_family.lang_enum[lang]
+	family = countries_native_family.language_family[lang]
+	lang_family = countries_native_family.family_enum[family]
+	is_native = countries_native_family.is_native_enum[countries_native_family.is_native[family]]
+
+	return c_lang, lang_family, is_native
+
+
 def get_target_for_country(country, country_chunks):
 	logger.info('Creating targets for country ' + country)
-	c_lang = countries_native_family.lang_enum[countries_native_family.country_language[country]]
-	lang_family = countries_native_family.family_enum[countries_native_family.language_family[countries_native_family.country_language[country]]]
-	is_native = int(lang_family == 0)
+	c_lang, lang_family, is_native = nums_for_country(country)
 
 	return np.full((country_chunks, 1), c_lang), np.full((country_chunks, 1), lang_family), np.full((country_chunks, 1), is_native)
 
@@ -153,6 +161,10 @@ def load_word2vec_model(model_path, binary_model=False):
 	word2vec_model = KeyedVectors.load_word2vec_format(model_path, binary=binary_model)
 	logger.info("The word vector size is: " + str(word2vec_model.vector_size))
 	known_words = set(word2vec_model.vocab.keys())
+
+
+def remap_array(array, mapping):
+	return np.vectorize(mapping.get)(array)
 
 
 class NLI:
@@ -218,27 +230,15 @@ class NLI:
 	def write_models(self):
 		logger.info('Writing models')
 		prefix = '-'.join(self.feature_types)
-		f1 = open(prefix+"_is_native.pkl", 'wb')
-		f2 = open(prefix+"_lang_family.pkl", 'wb')
 		f3 = open(prefix+"_native_lang.pkl", 'wb')
-		pickle.dump(self.model_is_native, f1)
-		pickle.dump(self.model_lang_family, f2)
 		pickle.dump(self.model_native_lang, f3)
-		f1.close()
-		f2.close()
 		f3.close()
 
 	def load_models(self):
 		logger.info('Loading models')
 		prefix = '-'.join(self.feature_types)
-		f1 = open(prefix+"_is_native.pkl", 'rb')
-		f2 = open(prefix+"_lang_family.pkl", 'rb')
 		f3 = open(prefix+"_native_lang.pkl", 'rb')
-		self.model_is_native = pickle.load(f1)
-		self.model_lang_family = pickle.load(f2)
 		self.model_native_lang = pickle.load(f3)
-		f1.close()
-		f2.close()
 		f3.close()
 
 	def dump_vocabs(self):
@@ -347,18 +347,19 @@ class NLI:
 				write_out_features(country, target_is_native, target_lang_family, target_native_lang, country_features, write_out)
 
 			logger.info("testing results of country " + country)
-			logger.info("Native language speaker score:")
 			predictions = self.model_native_lang.predict(country_features)
+
+			logger.info("Native language speaker score:")
 			score = accuracy_score(target_native_lang, predictions)
 			logger.info(score)
 
 			logger.info("Language family score:")
-			predictions = self.model_lang_family.predict(country_features)
+			predictions = remap_array(predictions, mapping=countries_native_family.lang_num_to_family_num_enum)
 			score = accuracy_score(target_lang_family, predictions)
 			logger.info(score)
 
 			logger.info("Is native speaker:")
-			predictions = self.model_is_native.predict(country_features)
+			predictions = remap_array(predictions, mapping=countries_native_family.family_num_to_is_native)
 			score = accuracy_score(target_is_native, predictions)
 			logger.info(score)
 
@@ -370,9 +371,7 @@ class NLI:
 		temp_in_lang_family = []
 		temp_in_is_native = []
 		for country, paths in sorted(self.text_chunks_paths.items()):
-			c_lang = countries_native_family.lang_enum[countries_native_family.country_language[country]]
-			lang_family = countries_native_family.family_enum[countries_native_family.language_family[countries_native_family.country_language[country]]]
-			is_native = int(lang_family == 0)
+			c_lang, lang_family, is_native = nums_for_country(country)
 			temp_in_is_native.extend([is_native] * len(paths))
 			temp_in_lang_family.extend([lang_family] * len(paths))
 			temp_in_native_lang.extend([c_lang] * len(paths))
@@ -382,23 +381,43 @@ class NLI:
 		self.in_is_native_target = np.array(temp_in_is_native, order='C')
 
 	def train(self):
-		logger.info('Training model for "Is native speaker"')
-		self.model_is_native = get_trained_model(self.in_sample_feature, self.in_is_native_target, self.threads)
-		logger.info('Training model for "Native language family"')
-		self.model_lang_family = get_trained_model(self.in_sample_feature, self.in_lang_family_target, self.threads)
-		logger.info('Training model for "Native Language"')
+		logger.info('Training model for Native Language Identification')
 		self.model_native_lang = get_trained_model(self.in_sample_feature, self.in_native_lang_target, self.threads)
 
-	def calc_10_fold_score(self):
+	def calc_in_sample_scores(self):
+		logger.info('Calculating in sample scores')
+		native_lang_predictions = cross_val_predict(self.model_native_lang, self.in_sample_feature, self.in_native_lang_target, cv=10, n_jobs=self.threads)
+		lang_family_predictions = remap_array(native_lang_predictions, mapping=countries_native_family.lang_num_to_family_num_enum)
+		is_native_predictions = remap_array(lang_family_predictions, mapping=countries_native_family.family_num_to_is_native)
+
 		logger.info('Calculating 10 fold scores')
-		score = np.average(cross_val_score(self.model_native_lang, self.in_sample_feature, self.in_native_lang_target, cv=10)) * 100
-		logger.info("Native language speaker score: " + str(score))
+		score = accuracy_score(native_lang_predictions, self.in_native_lang_target)
+		logger.info('Native language score: {0}'.format(score))
+		score = accuracy_score(lang_family_predictions, self.in_lang_family_target)
+		logger.info('Language family score: {0}'.format(score))
+		score = accuracy_score(is_native_predictions, self.in_is_native_target)
+		logger.info('Is native score: {0}'.format(score))
 
-		score = np.average(cross_val_score(self.model_lang_family, self.in_sample_feature, self.in_lang_family_target, cv=10)) * 100
-		logger.info("Language family score: " + str(score))
+		logger.info('Calculating 10 fold score for each country')
+		for country in self.text_chunks_paths.keys():
+			logger.info('Score for country: ' + str(country))
+			country_lang = countries_native_family.country_language[country]
+			indexes = self.in_native_lang_target == countries_native_family.lang_enum[country_lang]
 
-		score = np.average(cross_val_score(self.model_is_native, self.in_sample_feature, self.in_is_native_target, cv=10)) * 100
-		logger.info("Is native speaker: " + str(score))
+			targets = self.in_native_lang_target[indexes]
+			predictions = native_lang_predictions[indexes]
+			score = accuracy_score(predictions, targets)
+			logger.info('Native language score: {0}'.format(score))
+
+			targets = self.in_lang_family_target[indexes]
+			predictions = lang_family_predictions[indexes]
+			score = accuracy_score(predictions, targets)
+			logger.info('Language family score: {0}'.format(score))
+
+			targets = self.in_is_native_target[indexes]
+			predictions = is_native_predictions[indexes]
+			score = accuracy_score(predictions, targets)
+			logger.info('Is native score: {0}'.format(score))
 
 	def down_sample_in(self):
 		logger.info('Down sampling in sample paths')
@@ -449,7 +468,7 @@ def main(text_source, pos_source, num_threads, load_in, load_out, write_in, writ
 	else:
 		classifier.train()
 		classifier.write_models()
-		classifier.calc_10_fold_score()
+	classifier.calc_in_sample_scores()
 
 	logger.info("Testing out of sample countries")
 	classifier.test_out_paths(load_out, write_out)
