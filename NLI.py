@@ -351,17 +351,17 @@ class NLI:
 
 			logger.info("Native language speaker score:")
 			score = accuracy_score(target_native_lang, predictions)
-			logger.info(score)
+			logger.info("{0:.2%}".format(score))
 
 			logger.info("Language family score:")
 			predictions = remap_array(predictions, mapping=countries_native_family.lang_num_to_family_num_enum)
 			score = accuracy_score(target_lang_family, predictions)
-			logger.info(score)
+			logger.info("{0:.2%}".format(score))
 
 			logger.info("Is native speaker:")
 			predictions = remap_array(predictions, mapping=countries_native_family.family_num_to_is_native)
 			score = accuracy_score(target_is_native, predictions)
-			logger.info(score)
+			logger.info("{0:.2%}".format(score))
 
 			gc.collect()
 
@@ -392,11 +392,11 @@ class NLI:
 
 		logger.info('Calculating 10 fold scores')
 		score = accuracy_score(native_lang_predictions, self.in_native_lang_target)
-		logger.info('Native language score: {0}'.format(score))
+		logger.info('Native language score: {0:.2%}'.format(score))
 		score = accuracy_score(lang_family_predictions, self.in_lang_family_target)
-		logger.info('Language family score: {0}'.format(score))
+		logger.info('Language family score: {0:.2%}'.format(score))
 		score = accuracy_score(is_native_predictions, self.in_is_native_target)
-		logger.info('Is native score: {0}'.format(score))
+		logger.info('Is native score: {0:.2%}'.format(score))
 
 		logger.info('Calculating 10 fold score for each country')
 		for country in self.text_chunks_paths.keys():
@@ -407,17 +407,17 @@ class NLI:
 			targets = self.in_native_lang_target[indexes]
 			predictions = native_lang_predictions[indexes]
 			score = accuracy_score(predictions, targets)
-			logger.info('Native language score: {0}'.format(score))
+			logger.info('Native language score: {0:.2%}'.format(score))
 
 			targets = self.in_lang_family_target[indexes]
 			predictions = lang_family_predictions[indexes]
 			score = accuracy_score(predictions, targets)
-			logger.info('Language family score: {0}'.format(score))
+			logger.info('Language family score: {0:.2%}'.format(score))
 
 			targets = self.in_is_native_target[indexes]
 			predictions = is_native_predictions[indexes]
 			score = accuracy_score(predictions, targets)
-			logger.info('Is native score: {0}'.format(score))
+			logger.info('Is native score: {0:.2%}'.format(score))
 
 	def down_sample_in(self):
 		logger.info('Down sampling in sample paths')
