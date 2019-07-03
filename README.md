@@ -105,7 +105,7 @@ Combined Accuracy is at the bottom row
 | Country | Is Native | Language Family | Native Language | Number of Chunks |
 | --- | :---: | :---: | :---: | :---: |
 | Australia | 47.88% | 47.88% | 47.88% | 421020 |
-| Austria | 76.70% | 33.16% | 25.32% | 421020 |
+| Austria | 76.70% | 33.16% | 25.32% | 294280 |
 | Bosnia | 82.34% | 54.37% | 15.01% | 71010 |
 | Bulgaria | 73.94% | 31.90% | 5.75% | 119990 |
 | Croatia | 74.79% | 38.99% | 8.77% | 143900 |
@@ -136,7 +136,7 @@ Combined Accuracy is at the bottom row
 | UK | 52.70% | 52.70% | 52.70% | 3418210 |
 | US | 43.86% | 43.86% | 43.86% | 5436530 |
 | Ukraine | 87.49% | 63.79% | 22.07% | 120050 |
-| Total | | | | 20064120 |
+| Total | 60.94% | 39.40% | 31.66% | 19892070 |
 
 All the results below are using pre-trained word2vec model
 #### Bert
@@ -217,4 +217,4 @@ Combined Accuracy is at the bottom row
 | UK | | | | 3418210 |
 | US | | | | 5436530 |
 | Ukraine | | | | 120050 |
-| Total | | | | 20064120 |
+| Total | | | | 19892070 |
