@@ -42,7 +42,7 @@ def parse_args():
 
 
 def set_log():
-	logging.basicConfig(stream=sys.stdout, format='%(asctime)s %(levelname)-8s %(message)s', level=logging.INFO)
+	logging.basicConfig(stream=sys.stdout, format='%(asctime)s %(levelname)-8s %(message)s', level=logging.DEBUG)
 
 
 def get_chunks_folders(path):
@@ -62,42 +62,42 @@ def get_chunks_folders(path):
 def get_trained_model(features, target, num_threads):
 	model = linear_model.LogisticRegression(solver='lbfgs', n_jobs=num_threads, multi_class='auto')
 	model.fit(features, target)
-	logger.info("Model trained")
+	logger.debug("Model trained")
 	return model
 
 
 def extract_features_bow(paths, vocab=None, features_count=1000):
-	logger.info('Extracting bow')
+	logger.debug('Extracting bow')
 	vectorizer = TfidfVectorizer(input='filename', encoding='utf-8', decode_error='ignore', max_features=features_count, dtype=np.float32, vocabulary=vocab)
 	if vocab is not None:
-		logger.info('Using vocab')
+		logger.debug('Using vocab')
 		return vectorizer.fit_transform(paths)
 	else:
-		logger.info('extracting ' + str(features_count) + ' features')
+		logger.debug('extracting ' + str(features_count) + ' features')
 		features = vectorizer.fit_transform(paths)
 		return features, vectorizer.vocabulary_
 
 
 def extract_features_pos(paths, vocab=None, features_count=1000):
-	logger.info('Extracting pos')
+	logger.debug('Extracting pos')
 	vectorizer = TfidfVectorizer(input='filename', encoding='utf-8', decode_error='ignore', ngram_range=(3, 3), max_features=features_count, dtype=np.float32, vocabulary=vocab)
 	if vocab is not None:
-		logger.info('Using vocab')
+		logger.debug('Using vocab')
 		return vectorizer.fit_transform(paths)
 	else:
-		logger.info('extracting ' + str(features_count) + ' features')
+		logger.debug('extracting ' + str(features_count) + ' features')
 		features = vectorizer.fit_transform(paths)
 		return features, vectorizer.vocabulary_
 
 
 def extract_features_char3(paths, vocab=None, features_count=1000):
-	logger.info('Extracting char3')
+	logger.debug('Extracting char3')
 	vectorizer = TfidfVectorizer(input='filename', encoding='utf-8', decode_error='ignore', ngram_range=(3, 3), analyzer='char', max_features=features_count, dtype=np.float32, vocabulary=vocab)
 	if vocab is not None:
-		logger.info('Using vocab')
+		logger.debug('Using vocab')
 		return vectorizer.fit_transform(paths)
 	else:
-		logger.info('extracting ' + str(features_count) + ' features')
+		logger.debug('extracting ' + str(features_count) + ' features')
 		features = vectorizer.fit_transform(paths)
 		return features, vectorizer.vocabulary_
 
@@ -111,7 +111,7 @@ def extract_word2vec_from_text(file_path):
 
 
 def extract_features_word2vec(paths):
-	logger.info("Extracting word2vec features")
+	logger.debug("Extracting word2vec features")
 	all_features = np.empty((len(paths), word2vec_model.vector_size), dtype=np.float32)
 
 	with concurrent.futures.ProcessPoolExecutor() as executor:
@@ -122,19 +122,23 @@ def extract_features_word2vec(paths):
 
 
 def write_out_features(country, target_is_native, target_lang_family, target_native_lang, features, path="./"):
-	logger.info('Writing country out of sample features')
+	logger.debug('Writing country out of sample features')
+	logger.debug('Writing to file: ' + path + country + "_features.npz")
 	sparse.save_npz(path + country + "_features.npz", features)
 	np.savez_compressed(path + country + "_targets.npz", is_native=target_is_native, lang_family=target_lang_family, native_lang=target_native_lang)
 
 
-def read_country_from_file(write_out, country):
-	logger.info("Reading country out of sample features from file")
-	prefix = os.path.join(write_out, country)
+def read_country_from_file(file, country):
+	logger.debug("Reading country out of sample features from file")
+	prefix = file + country
+	logger.debug('Reading from file: ' + prefix + "_features.npz")
 	features = sparse.load_npz(prefix + "_features.npz")
+	logger.debug('Reading from file: ' + prefix + "_targets.npz")
 	in_targets = np.load(prefix + "_targets.npz")
 	in_is_native_target = in_targets['is_native']
 	in_lang_family_target = in_targets['lang_family']
 	in_native_lang_target = in_targets['native_lang']
+	logger.debug('Loaded features of size: ' + str(features.shape))
 	return features, in_native_lang_target, in_lang_family_target, in_is_native_target
 
 
@@ -159,7 +163,7 @@ def load_word2vec_model(model_path, binary_model=False):
 	logger.info("Loading word2vec model from: " + model_path)
 	global known_words, word2vec_model
 	word2vec_model = KeyedVectors.load_word2vec_format(model_path, binary=binary_model)
-	logger.info("The word vector size is: " + str(word2vec_model.vector_size))
+	logger.debug("The word vector size is: " + str(word2vec_model.vector_size))
 	known_words = set(word2vec_model.vocab.keys())
 
 
@@ -201,7 +205,7 @@ class NLI:
 			self.pos_chunks_paths = None
 
 		self.vocabs = {}
-		logger.info("finish init")
+		logger.debug("finish init")
 
 	def write_in_features(self, file):
 		logger.info('Writing in sample features')
@@ -211,7 +215,7 @@ class NLI:
 	def load_in_features(self, file):
 		logger.info('Loading in sample features')
 		self.in_sample_feature = sparse.load_npz(file + "_features.npz")
-		logging.info("loaded in features of size " + str(self.in_sample_feature.shape))
+		logging.debug("loaded in features of size " + str(self.in_sample_feature.shape))
 		in_targets = np.load(file + "_targets.npz")
 		self.in_is_native_target = in_targets['is_native']
 		self.in_lang_family_target = in_targets['lang_family']
@@ -224,8 +228,8 @@ class NLI:
 			sparse.save_npz(filename, mat)
 
 	def set_function_words(self, words):
-		logger.info('Setting Function words')
-		self.vocabs['fw'] = ({word: i for i, word in enumerate(words)})
+		logger.debug('Setting Function words')
+		self.vocabs['fw'] = {word: i for i, word in enumerate(words)}
 
 	def write_models(self):
 		logger.info('Writing models')
@@ -244,7 +248,7 @@ class NLI:
 	def dump_vocabs(self):
 		logger.info('write vocabs')
 		for feature_type, vocab in self.vocabs.items():
-			logger.info('writing ' + feature_type + '_vocab.pkl')
+			logger.debug('writing ' + feature_type + '_vocab.pkl')
 			filename = feature_type + '_vocab.pkl'
 			f = open(filename, 'wb')
 			pickle.dump(vocab, f)
@@ -254,7 +258,7 @@ class NLI:
 		for feature_type in self.feature_types:
 			if feature_type != 'w2v':
 				filename = feature_type + '_vocab.pkl'
-				logger.info('reading ' + filename)
+				logger.debug('reading ' + filename)
 				f = open(filename, 'rb')
 				self.vocabs[feature_type] = (pickle.load(f))
 				f.close()
@@ -268,11 +272,11 @@ class NLI:
 		if self.pos_chunks_paths is not None:
 			for country in sorted(self.pos_chunks_paths.keys()):
 				all_pos_paths.extend(self.pos_chunks_paths[country])
-		logger.info("in sample files: " + str(len(all_text_paths)))
+		logger.debug("in sample files: " + str(len(all_text_paths)))
 
 		features_per_type = []
 		for feature_type in self.feature_types:
-			logger.info('Extracting type: ' + feature_type)
+			logger.debug('Extracting type: ' + feature_type)
 			features = None
 			vocab = None
 			try:
@@ -283,7 +287,7 @@ class NLI:
 				elif feature_type == 'pos':
 					features, vocab = extract_features_pos(all_pos_paths)
 				elif feature_type == 'fw':
-					logger.info('extracting fw using bow')
+					logger.debug('extracting fw using bow')
 					features = extract_features_bow(all_text_paths, vocab=self.vocabs['fw'])
 				elif feature_type == 'w2v':
 					features = sparse.csr_matrix(extract_features_word2vec(all_text_paths))
@@ -308,15 +312,15 @@ class NLI:
 		logger.info('Extracting out sample features')
 		for country in sorted(self.out_text_chunks_paths.keys()):
 			if load_out is None:
-				logger.info("Extracting out features from files")
+				logger.debug("Extracting out features from files")
 				country_text_paths = self.out_text_chunks_paths[country]
 				country_pos_paths = self.out_pos_chunks_paths[country]
-				logger.info("out sample files for country: " + country + " " + str(len(country_text_paths)))
+				logger.debug("out sample files for country: " + country + " " + str(len(country_text_paths)))
 				logger.info("Extracting features for country " + country)
 				features_per_type = []
 
 				for feature_type in self.feature_types:
-					logger.info('Extracting type: ' + feature_type)
+					logger.debug('Extracting type: ' + feature_type)
 					features = None
 
 					if feature_type == 'bow':
@@ -326,7 +330,7 @@ class NLI:
 					elif feature_type == 'pos':
 						features = extract_features_pos(country_pos_paths, vocab=self.vocabs[feature_type])
 					elif feature_type == 'fw':
-						logger.info('extracting fw using bow')
+						logger.debug('extracting fw using bow')
 						features = extract_features_bow(country_text_paths, vocab=self.vocabs['fw'])
 					elif feature_type == 'w2v':
 						features = sparse.csr_matrix(extract_features_word2vec(country_text_paths))
@@ -425,7 +429,7 @@ class NLI:
 		new_pos_paths = {}
 
 		min_number_chunks = min(map(lambda x: len(x), self.text_chunks_paths.values()))
-		logger.info('minimum number of chunks is: ' + str(min_number_chunks))
+		logger.debug('minimum number of chunks is: ' + str(min_number_chunks))
 
 		for country, all_country_text in self.text_chunks_paths.items():
 			if self.pos_chunks_paths is not None:
@@ -447,7 +451,7 @@ def main(text_source, pos_source, num_threads, load_in, load_out, write_in, writ
 	if model is not None:
 		load_word2vec_model(model, binary)
 
-	logger.info('load in from file is: ' + str(load_in))
+	logger.debug('load in from file is: ' + str(load_in))
 	if load_in is not None:
 		classifier.load_in_features(load_in)
 		classifier.read_vocabs()
@@ -459,7 +463,7 @@ def main(text_source, pos_source, num_threads, load_in, load_out, write_in, writ
 		classifier.dump_vocabs()
 		classifier.target_in_sample()
 
-	logger.info('write in to file is: ' + str(write_in))
+	logger.debug('write in to file is: ' + str(write_in))
 	if write_in is not None:
 		classifier.write_in_features(write_in)
 
@@ -468,9 +472,9 @@ def main(text_source, pos_source, num_threads, load_in, load_out, write_in, writ
 	else:
 		classifier.train()
 		classifier.write_models()
-	classifier.calc_in_sample_scores()
+		classifier.calc_in_sample_scores()
 
-	logger.info("Testing out of sample countries")
+	logger.debug("Testing out of sample countries")
 	classifier.test_out_paths(load_out, write_out)
 
 

@@ -134,8 +134,8 @@ Combined Accuracy is at the bottom row
 | Sweden | 70.08% | 27.04% | 8.23% | 772480 |
 | Turkey | 76.78% | 28.72% | 21.14% | 177940 |
 | UK | 52.70% | 52.70% | 52.70% | 3418210 |
-| US | | | | 5436530 |
-| Ukraine | | | | 120050 |
+| US | 43.86% | 43.86% | 43.86% | 5436530 |
+| Ukraine | 87.49% | 63.79% | 22.07% | 120050 |
 | Total | | | | 20064120 |
 
 All the results below are using pre-trained word2vec model
