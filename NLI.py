@@ -6,7 +6,6 @@ import pickle
 import re
 import sys
 import random
-import concurrent.futures   # for paralleling word2vec
 
 import numpy as np
 from gensim.models import KeyedVectors
@@ -20,9 +19,6 @@ import countries_native_family
 import en_function_words
 
 logger = logging.getLogger()
-
-word2vec_model = None       # need to use global variables to bypass GIL when multiprocessing
-known_words = {}
 
 
 def parse_args():
@@ -110,24 +106,14 @@ def extract_features_char3(paths, vocab=None, features_count=1000):
 		return features, vectorizer.vocabulary_
 
 
-def extract_word2vec_from_text(file_path):
-	features = np.zeros((1, word2vec_model.vector_size), dtype=np.float32)
-	text = list(filter(lambda x: x != "" and x in known_words, re.split(r'[ |\n]', open(file_path, 'r', encoding='utf-8').read())))
-	for word in text:
-		features = np.add(features, word2vec_model[word])
-	return features
-
-
-def extract_features_word2vec(paths):
+def extract_features_word2vec(paths, word2vec_model, known_words):
 	logger.debug("Extracting word2vec features")
-	all_features = np.empty((len(paths), word2vec_model.vector_size), dtype=np.float32)
+	all_features = np.zeros((len(paths), word2vec_model.vector_size), dtype=np.float32)
 
 	for i, path in enumerate(paths):
-		all_features[i] = extract_word2vec_from_text(path)
-
-	# with concurrent.futures.ProcessPoolExecutor() as executor:
-	# 	for i, feature_line in enumerate(executor.map(extract_word2vec_from_text, paths, chunksize=len(paths)//16)):
-	# 		all_features[i] = feature_line
+		text = filter(lambda x: x != "" and x in known_words, re.split(r'[ |\n]', open(path, 'r', encoding='utf-8').read()))
+		for word in text:
+			all_features[i] = np.add(all_features[i], word2vec_model[word])
 
 	return np.nan_to_num(all_features, copy=False)
 
@@ -170,14 +156,6 @@ def get_target_for_country(country, country_chunks):
 	return np.full((country_chunks, 1), c_lang), np.full((country_chunks, 1), lang_family), np.full((country_chunks, 1), is_native)
 
 
-def load_word2vec_model(model_path, binary_model=False):
-	logger.info("Loading word2vec model from: " + model_path)
-	global known_words, word2vec_model
-	word2vec_model = KeyedVectors.load_word2vec_format(model_path, binary=binary_model)
-	logger.debug("The word vector size is: " + str(word2vec_model.vector_size))
-	known_words = set(word2vec_model.vocab.keys())
-
-
 def remap_array(array, mapping):
 	return np.vectorize(mapping.get)(array)
 
@@ -216,7 +194,16 @@ class NLI:
 			self.pos_chunks_paths = None
 
 		self.vocabs = {}
+		self.w2v_model = None
+		self.known_words = set()
+
 		logger.debug("finish init")
+
+	def load_word2vec_model(self, model_path, binary_model=False):
+		logger.info("Loading word2vec model from: " + model_path)
+		self.w2v_model = KeyedVectors.load_word2vec_format(model_path, binary=binary_model)
+		logger.debug("The word vector size is: " + str(self.w2v_model.vector_size))
+		self.known_words = set(self.w2v_model.vocab.keys())
 
 	def write_in_features(self, file):
 		logger.info('Writing in sample features')
@@ -301,7 +288,7 @@ class NLI:
 					logger.debug('extracting fw using bow')
 					features = extract_features_bow(all_text_paths, vocab=self.vocabs['fw'])
 				elif feature_type == 'w2v':
-					features = sparse.csr_matrix(extract_features_word2vec(all_text_paths))
+					features = sparse.csr_matrix(extract_features_word2vec(all_text_paths, self.w2v_model, self.known_words))
 				else:
 					logger.warning('Unknown features type')
 			except MemoryError as me:
@@ -343,7 +330,7 @@ class NLI:
 						logger.debug('extracting fw using bow')
 						features = extract_features_bow(country_text_paths, vocab=self.vocabs['fw'])
 					elif feature_type == 'w2v':
-						features = sparse.csr_matrix(extract_features_word2vec(country_text_paths))
+						features = sparse.csr_matrix(extract_features_word2vec(country_text_paths, self.w2v_model, self.known_words))
 					else:
 						logger.warning('Unknown features type')
 
@@ -459,7 +446,7 @@ def main(text_source, pos_source, num_threads, load_in, load_out, write_in, writ
 
 	classifier = NLI(text_source, pos_source, num_threads, feature_types)
 	if model is not None:
-		load_word2vec_model(model, binary)
+		classifier.load_word2vec_model(model, binary)
 
 	logger.debug('load in from file is: ' + str(load_in))
 	if load_in is not None:
