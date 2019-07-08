@@ -41,6 +41,14 @@ def parse_args():
 	return parser.parse_args()
 
 
+def np_arr_to_file(arr, file):
+	with open(file, 'wt') as fh:
+		for row in arr:
+			for col in row:
+				fh.write(str(col) + '\t')
+			fh.write('\n')
+
+
 def set_log():
 	logging.basicConfig(stream=sys.stdout, format='%(asctime)s %(levelname)-8s %(message)s', level=logging.DEBUG)
 
@@ -103,7 +111,7 @@ def extract_features_char3(paths, vocab=None, features_count=1000):
 
 
 def extract_word2vec_from_text(file_path):
-	features = np.empty((1, word2vec_model.vector_size), dtype=np.float32)
+	features = np.zeros((1, word2vec_model.vector_size), dtype=np.float32)
 	text = list(filter(lambda x: x != "" and x in known_words, re.split(r'[ |\n]', open(file_path, 'r', encoding='utf-8').read())))
 	for word in text:
 		features = np.add(features, word2vec_model[word])
@@ -114,9 +122,12 @@ def extract_features_word2vec(paths):
 	logger.debug("Extracting word2vec features")
 	all_features = np.empty((len(paths), word2vec_model.vector_size), dtype=np.float32)
 
-	with concurrent.futures.ProcessPoolExecutor() as executor:
-		for i, feature_line in enumerate(executor.map(extract_word2vec_from_text, paths, chunksize=len(paths)//16)):
-			all_features[i] = feature_line
+	for i, path in enumerate(paths):
+		all_features[i] = extract_word2vec_from_text(path)
+
+	# with concurrent.futures.ProcessPoolExecutor() as executor:
+	# 	for i, feature_line in enumerate(executor.map(extract_word2vec_from_text, paths, chunksize=len(paths)//16)):
+	# 		all_features[i] = feature_line
 
 	return np.nan_to_num(all_features, copy=False)
 
@@ -314,7 +325,6 @@ class NLI:
 			if load_out is None:
 				logger.debug("Extracting out features from files")
 				country_text_paths = self.out_text_chunks_paths[country]
-				country_pos_paths = self.out_pos_chunks_paths[country]
 				logger.debug("out sample files for country: " + country + " " + str(len(country_text_paths)))
 				logger.info("Extracting features for country " + country)
 				features_per_type = []
@@ -328,7 +338,7 @@ class NLI:
 					elif feature_type == 'char3':
 						features = extract_features_char3(country_text_paths, vocab=self.vocabs[feature_type])
 					elif feature_type == 'pos':
-						features = extract_features_pos(country_pos_paths, vocab=self.vocabs[feature_type])
+						features = extract_features_pos(self.out_pos_chunks_paths[country], vocab=self.vocabs[feature_type])
 					elif feature_type == 'fw':
 						logger.debug('extracting fw using bow')
 						features = extract_features_bow(country_text_paths, vocab=self.vocabs['fw'])
