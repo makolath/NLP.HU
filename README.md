@@ -139,44 +139,44 @@ Combined Accuracy is at the bottom row
 | Total | 60.94% | 39.40% | 31.66% | 19892070 |
 
 All the results below are using pre-trained word2vec model
-#### Bert
+#### Google's word2vec
 ##### Results
 ###### In-Domain (data from r/europe)
 | Country | Is Native | Language Family | Native Language |
 | --- | :---: | :---: | :---: |
-| All | 75.40% | 24.59% | 0.48% |
-| Australia | | | |
-| Austria | | | |
-| Bosnia | | | |
-| Bulgaria | | | |
-| Croatia | | | |
-| Czech Republic | | | |
-| Denmark | | | |
-| Estonia| | | |
-| Finland | | | |
-| France | | | |
-| Germany | | | |
-| Greece | | | |
-| Hungary | | | |
-| Ireland | | | |
-| Italy | | | |
-| Latvia | | | |
-| Lithuania | | | |
-| Netherlands | | | |
-| Norway | | | |
-| Poland | | | |
-| Portugal | | | | 
-| Romania | | | |
-| Russia | | | |
-| Serbia | | | |
-| Slovakia | | | |
-| Slovenia | | | |
-| Spain | | | |
-| Sweden | | | |
-| Turkey | | | |
-| UK | | | |
-| US | | | |
-| Ukraine | | | |
+| All | 77.60% | 48.61% | 29.14% |
+| Australia | 66.35% | 66.35% | 66.35% |
+| Austria | 75.59% | 39.79% | 34.36% |
+| Bosnia | 88.09% | 70.95% | 41.36% |
+| Bulgaria | 77.24% | 39.55% | 10.81% |
+| Croatia | 78.72% | 44.83% | 8.03% |
+| Czech Republic | 79.45% | 44.71% | 15.03% |
+| Denmark | 78.88% | 42.19% | 25.27% |
+| Estonia | 80.65% | 51.44% | 15.84% |
+| Finland | 74.38% | 18.05% | 12.66% |
+| France | 71.70% | 39.07% | 28.68% |
+| Germany | 75.59% | 39.79% | 34.36% |
+| Greece | 77.69% | 38.60% | 28.48% |
+| Hungary | 80.67% | 23.10% | 17.16% |
+| Ireland | 66.35% | 66.35% | 66.35% |
+| Italy | 79.35% | 43.73% | 33.63% |
+| Latvia | 86.86% | 65.05% | 22.11% |
+| Lithuania | 83.35% | 57.81% | 17.24% |
+| Netherlands | 66.04% | 29.19% | 9.17% |
+| Norway | 69.59% | 35.88% | 13.41% |
+| Poland | 81.14% | 53.65% | 22.96% |
+| Portugal | 71.68% | 37.44% | 20.85% | 
+| Romania | 70.93% | 18.44% | 8.32% |
+| Russia | 86.13% | 70.28% | 32.56% |
+| Serbia | 83.23% | 53.73% | 24.52% |
+| Slovakia | 86.88% | 60.79% | 28.82% |
+| Slovenia | 75.86% | 37.34% | 5.80% |
+| Spain | 82.68% | 57.12% | 46.69% |
+| Sweden | 74.28% | 37.67% | 19.19% |
+| Turkey | 88.82% | 60.49% | 54.16% |
+| UK | 66.35% | 66.35% | 66.35% |
+| US | 66.35% | 66.35% | 66.35% |
+| Ukraine | 92.23% | 79.57% | 35.68% |
 
 ###### Out-of-Domain
 Results per-country are accuracy
@@ -185,36 +185,36 @@ Combined Accuracy is at the bottom row
 
 | Country | Is Native | Language Family | Native Language | Number of Chunks |
 | --- | :---: | :---: | :---: | :---: |
-| Australia | | | | 421020 |
-| Austria | | | | 294280 |
-| Bosnia | | | | 71010 |
-| Bulgaria | | | | 119990 |
-| Croatia | | | | 143900 |
-| Czech Republic | | | | 175320 |
-| Denmark | | | | 681270 |
-| Estonia | | | | 110720 |
-| Finland | | | | 575030 |
-| France | | | | 560100 |
-| Germany | | | | 1587250 |
-| Greece | | | | 205540 |
-| Hungary | | | | 144520 |
-| Ireland | | | | 919200 |
-| Italy | | | | 246910 |
-| Latvia | | | | 90890 |
-| Lithuania | | | | 135670 |
-| Netherlands | | | | 1246100 |
-| Norway | | | | 413880 |
-| Poland | | | | 437470 |
-| Portugal | | | | 311950 |
-| Romania | | | | 292770 |
-| Russia | | | | 162160 |
-| Serbia | | | | 105890 |
-| Slovakia | | | | 110050 |
-| Slovenia | | | | 73020 |
-| Spain | | | | 330950 |
-| Sweden | | | | 772480 |
-| Turkey | | | | 177940 |
-| UK | | | | 3418210 |
-| US | | | | 5436530 |
-| Ukraine | | | | 120050 |
+| Australia | 56.18% | 56.18% | 56.18% | 421020 |
+| Austria | 74.91% | 28.94% | 20.61% | 294280 |
+| Bosnia | 79.34% | 46.37% | 11.04% | 71010 |
+| Bulgaria | 72.28% | 30.96% | 1.30% | 119990 |
+| Croatia | 73.53% | 36.26% | 5.20% | 143900 |
+| Czech Republic | 73.79% | 34.28% | 1.53% | 175320 |
+| Denmark | 73.38% | 26.73% | 10.21% | 681270 |
+| Estonia | 69.33% | 32.72% | 1.66% | 110720 |
+| Finland | 71.97% | 12.28% | 6.92% | 575030 |
+| France | 74.59% | 25.57% | 15.10% | 560100 |
+| Germany | 74.40% | 30.10% | 22.40% | 1587250 |
+| Greece | 73.37% | 14.82% | 6.32% | 205540 |
+| Hungary | 75.10% | 11.60% | 2.46% | 144520 |
+| Ireland | 58.25% | 58.25% | 58.25% | 919200 |
+| Italy | 75.29% | 27.84% | 15.16% | 246910 |
+| Latvia | 80.67% | 45.91% | 5.66% | 90890 |
+| Lithuania | 75.85% | 37.32% | 6.11% | 135670 |
+| Netherlands | 69.35% | 23.72% | 3.50% | 1246100 |
+| Norway | 68.37% | 23.44% | 6.07% | 413880 |
+| Poland | 75.19% | 40.08% | 8.49% | 437470 |
+| Portugal | 76.65% | 26.34% | 9.86% | 311950 |
+| Romania | 75.11% | 16.43% | 1.33% | 292770 |
+| Russia | 72.71% | 43.18% | 10.89% | 162160 |
+| Serbia | 73.98% | 38.13% | 6.28% | 105890 |
+| Slovakia | 81.66% | 46.37% | 12.11% | 110050 |
+| Slovenia | 73.96% | 32.79% | 6.98% | 73020 |
+| Spain | 70.25% | 23.72% | 15.16% | 330950 |
+| Sweden | 69.77% | 24.65% | 5.37% | 772480 |
+| Turkey | 79.56% | 29.82% | 25.37% | 177940 |
+| UK | 59.74% | 59.74% | 59.74% | 3418210 |
+| US | 47.62% | 47.62% | 47.62% | 5436530 |
+| Ukraine | 80.46% | 54.64% | 16.27% | 120050 |
 | Total | | | | 19892070 |
