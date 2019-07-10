@@ -22,7 +22,7 @@ logger = logging.getLogger()
 
 
 def parse_args():
-	parser = argparse.ArgumentParser(description='Native Language Identification', epilog='By\nMatan Kolath\nMerav Mazouz')
+	parser = argparse.ArgumentParser(description='Native Language Identification', epilog='By Matan Kolath and Merav Mazouz')
 	parser.add_argument('-t', '--text', type=str, help='Path to the text chunks')
 	parser.add_argument('-p', '--pos', type=str, help='Path to the pos chunks')
 	parser.add_argument('-c', '--threads', type=int, default=2, help='Number of threads to use to train')

@@ -6,8 +6,31 @@ trained models are available [here](https://drive.google.com/open?id=1PFvy3NKD0N
 vocabularies are available [here](https://drive.google.com/open?id=1Dq1HrPnJX1LvXuCc-3FjV5uGRInkpHwO)
 ### Raw data
 raw data used for classification is available [here](https://drive.google.com/drive/folders/125RAHvCIHBR-jAUnIhqzWhdxh0mQ_fcv)
+### Usage
+The script depends on the following modules:
+* NumPy
+* SciPy
+* sklearn
 
+The script depends on command-line arguments to specify certain paths and functionality desired
+
+* --text path to the text chunks folder
+* --pos path to the part of speech folder
+* --load-in to load the in sample feature matrix from file
+* --write-in to write the in sample features matrix to file
+* --load-out to load the out of sample matrices from files
+* --write-out to write the out of sample matrices to files
+* --read-models to read pre-trained models
+* --model to specify a word2vec model to use with feature type of w2v
+* --features feature to use for classification (can be given multiple times)
+
+More parameter exists to control behaviors 
 ### Results
+#### Random
+Random guess will results the following accuracies:
+* Native Language guess: 3.2%
+* Language Family guess: 20%
+* Is Native Speaker: 50%
 ##### Classifier
 All models were trained using Logistic Regression classifier
 
@@ -140,6 +163,11 @@ Combined Accuracy is at the bottom row
 
 All the results below are using pre-trained word2vec model
 #### Google's word2vec
+This word embedding model was pre-trained on the Google News dataset, about 100B words.
+
+The model contains 3M unique words, each with a 300 degrees vector
+
+The model is available [here](https://code.google.com/archive/p/word2vec/)
 ##### Results
 ###### In-Domain (data from r/europe)
 | Country | Is Native | Language Family | Native Language |
@@ -220,6 +248,11 @@ Combined Accuracy is at the bottom row
 | Total | | | | 19892070 |
 
 #### fasttex word embedding
+This word embedding model was pre-trained on a Common Crawl, about 600B words.
+
+The model contains 2M unique words, each with a 300 degrees vector
+
+The model is available [here](https://fasttext.cc/docs/en/english-vectors.html)
 ##### Results
 ###### In-Domain (data from r/europe)
 | Country | Is Native | Language Family | Native Language |
@@ -297,4 +330,90 @@ Combined Accuracy is at the bottom row
 | UK | 63.24% | 63.24% | 63.24% | 3418210 |
 | US | 50.59% | 50.59% | 50.59% | 5436530 |
 | Ukraine | 86.07% | 63.17% | 28.72% | 120050 |
-| Total | | | | 20064120 |
+| Total | | | | 19892070 |
+
+#### glove word embedding
+This word embedding model was pre-trained on a Common Crawl, about 840B words.
+
+The model contains 2.2M unique words, each with a 300 degrees vector
+
+The model is available [here](https://nlp.stanford.edu/projects/glove/)
+##### Results
+###### In-Domain (data from r/europe)
+
+| Country | Is Native | Language Family | Native Language |
+| --- | :---: | :---: | :---: |
+| All | 79.21% | 52.84% | 35.12% |
+| Australia | 68.92% | 68.92% | 68.92% |
+| Austria | 77.53% | 45.78% | 42.26% |
+| Bosnia | 91.99% | 78.56% | 47.95% |
+| Bulgaria | 81.05% | 45.40% | 19.55% |
+| Croatia | 81.83% | 55.09% | 18.76% |
+| Czech Republic | 80.93% | 43.96% | 16.92% |
+| Denmark | 81.05% | 48.92% | 36.71% |
+| Estonia | 82.76% | 60.12% | 30.41% |
+| Finland | 73.91% | 21.38% | 15.35% |
+| France | 70.89% | 36.94% | 28.50% |
+| Germany | 77.53% | 45.78% | 42.26% |
+| Greece | 81.83% | 44.22% | 33.65% |
+| Hungary | 83.73% | 27.34% | 22.76% |
+| Ireland | 68.92% | 68.92% | 68.92% |
+| Italy | 76.02% | 42.64% | 33.77% |
+| Latvia | 91.08% | 75.11% | 38.05% |
+| Lithuania | 84.52% | 63.06% | 32.68% |
+| Netherlands | 64.48% | 32.90% | 12.45% |
+| Norway | 69.68% | 39.92% | 22.05% |
+| Poland | 81.74% | 53.71% | 20.12% |
+| Portugal | 69.74% | 34.38% | 19.57% |
+| Romania | 76.25% | 24.38% | 16.17% |
+| Russia | 87.24% | 73.18% | 41.42% |
+| Serbia | 86.94% | 63.41% | 31.64% |
+| Slovakia | 91.16% | 67.79% | 38.74% |
+| Slovenia | 78.50% | 45.96% | 14.83% |
+| Spain | 81.08% | 57.79% | 50.06% |
+| Sweden | 70.63% | 35.56% | 9.86% |
+| Turkey | 89.63% | 66.39% | 60.02% |
+| UK | 68.92% | 68.92% | 68.92% |
+| US | 68.92% | 68.92% | 68.92% |
+| Ukraine | 95.35% | 85.50% | 51.46% |
+
+###### Out-of-Domain
+Results per-country are accuracy
+
+Combined Accuracy is at the bottom row
+
+| Country | Is Native | Language Family | Native Language | Number of Chunks |
+| --- | :---: | :---: | :---: | :---: |
+| Australia | 58.57% | 58.57% | 58.57% | 421020 |
+| Austria | 74.52% | 32.71% | 30.38% | 294280 |
+| Bosnia | 79.72% | 54.08% | 16.88% | 71010 |
+| Bulgaria | 70.38% | 33.66% | 1.64% | 119990 |
+| Croatia | 70.27% | 41.93% | 7.04% | 143900 |
+| Czech Republic | 70.73% | 36.62% | 3.34% | 175320 |
+| Denmark | 76.06% | 29.03% | 16.34% | 681270 |
+| Estonia | 68.02% | 35.35% | 4.16% | 110720 |
+| Finland | 67.88% | 11.49% | 5.35% | 575030 |
+| France | 70.03% | 22.38% | 15.80% | 560100 |
+| Germany | 75.38% | 36.24% | 33.98% | 1587250 |
+| Greece | 72.25% | 15.64% | 8.56% | 205540 |
+| Hungary | 71.89% | 11.28% | 3.37% | 144520 |
+| Ireland | 62.95% | 62.95% | 62.95% | 919200 |
+| Italy | 73.01% | 25.11% | 18.01% | 246910 |
+| Latvia | 83.17% | 59.27% | 12.47% | 90890 |
+| Lithuania | 72.66% | 40.81% | 6.47% | 135670 |
+| Netherlands | 65.25% | 26.72% | 4.02% | 1246100 |
+| Norway | 64.93% | 24.78% | 3.46% | 413880 |
+| Poland | 72.87% | 42.33% | 6.06% | 437470 |
+| Portugal | 72.74% | 19.93% | 6.49% | 311950 |
+| Romania | 74.35% | 15.35% | 8.10% | 292770 |
+| Russia | 69.34% | 45.79% | 14.72% | 162160 |
+| Serbia | 71.05% | 41.99% | 10.46% | 105890 |
+| Slovakia | 83.01% | 55.18% | 18.91% | 110050 |
+| Slovenia | 69.99% | 36.18% | 5.61% | 73020 |
+| Spain | 66.61% | 19.74% | 13.65% | 330950 |
+| Sweden | 64.69% | 23.91% | 2.59% | 772480 |
+| Turkey | 78.65% | 35.23% | 30.47% | 177940 |
+| UK | 65.14% | 65.14% | 65.14% | 3418210 |
+| US | 51.55% | 51.55% | 51.55% | 5436530 |
+| Ukraine | 85.99% | 64.38% | 25.78% | 120050 |
+| Total | | | | 19892070 |
