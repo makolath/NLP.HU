@@ -333,7 +333,7 @@ Combined Accuracy is at the bottom row
 | UK | 63.24% | 63.24% | 63.24% | 3418210 |
 | US | 50.59% | 50.59% | 50.59% | 5436530 |
 | Ukraine | 86.07% | 63.17% | 28.72% | 120050 |
-| Total | | | | 19892070 |
+| Total | 66.34% | 45.31 | 36.47 | 19892070 |
 
 #### glove word embedding
 This word embedding model was pre-trained on a Common Crawl, about 840B words.
