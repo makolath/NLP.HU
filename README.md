@@ -248,7 +248,7 @@ Combined Accuracy is at the bottom row
 | UK | 59.74% | 59.74% | 59.74% | 3418210 |
 | US | 47.62% | 47.62% | 47.62% | 5436530 |
 | Ukraine | 80.46% | 54.64% | 16.27% | 120050 |
-| Total | 62.82% | 40.51 | 32.38% | 19892070 |
+| Total | 62.82% | 40.51% | 32.38% | 19892070 |
 
 #### fasttex word embedding
 This word embedding model was pre-trained on a Common Crawl, about 600B words.
@@ -333,7 +333,7 @@ Combined Accuracy is at the bottom row
 | UK | 63.24% | 63.24% | 63.24% | 3418210 |
 | US | 50.59% | 50.59% | 50.59% | 5436530 |
 | Ukraine | 86.07% | 63.17% | 28.72% | 120050 |
-| Total | 66.34% | 45.31 | 36.47 | 19892070 |
+| Total | 66.34% | 45.31% | 36.47% | 19892070 |
 
 #### glove word embedding
 This word embedding model was pre-trained on a Common Crawl, about 840B words.
