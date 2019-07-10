@@ -7,10 +7,13 @@ vocabularies are available [here](https://drive.google.com/open?id=1Dq1HrPnJX1Lv
 ### Raw data
 raw data used for classification is available [here](https://drive.google.com/drive/folders/125RAHvCIHBR-jAUnIhqzWhdxh0mQ_fcv)
 ### Usage
+The script was tested with python 3.7
+
 The script depends on the following modules:
 * NumPy
 * SciPy
 * sklearn
+* gensim
 
 The script depends on command-line arguments to specify certain paths and functionality desired
 
