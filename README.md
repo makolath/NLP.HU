@@ -422,39 +422,39 @@ This method obvious drawback is the model was fed sentences for training, but pa
 
 | Country | Is Native | Language Family | Native Language |
 | --- | :---: | :---: | :---: |
-| All | | | | - |
-| Australia | | | |
-| Austria | | | |
-| Bosnia | | | |
-| Bulgaria | | | |
-| Croatia | | | |
-| Czech Republic | | | |
-| Denmark | | | |
-| Estonia| | | |
-| Finland | | | |
-| France | | | |
-| Germany | | | |
-| Greece | | | |
-| Hungary | | | |
-| Ireland | | | |
-| Italy | | | |
-| Latvia | | | |
-| Lithuania | | | |
-| Netherlands | | | |
-| Norway | | | |
-| Poland | | | |
-| Portugal | | | |
-| Romania | | | |
-| Russia | | | |
-| Serbia | | | |
-| Slovakia | | | |
-| Slovenia | | | |
-| Spain | | | |
-| Sweden | | | |
-| Turkey | | | |
-| UK | | | |
-| US | | | |
-| Ukraine | | | |
+| All | 83.85% | 60.98% | 46.07% |
+| Australia | 66.53% | 66.53% | 66.53% |
+| Austria | 81.85% | 48.84% | 42.90% |
+| Bosnia | 96.35% | 87.57% | 60.39% |
+| Bulgaria | 86.15% | 55.05% | 34.26% |
+| Croatia | 87.12% | 61.50% | 27.44% |
+| Czech Republic | 85.29% | 54.22% | 31.18% |
+| Denmark | 92.11% | 62.72% | 56.19% |
+| Estonia | 87.89% | 66.41% | 41.52% |
+| Finland | 80.37% | 33.59% | 29.47% |
+| France | 76.82% | 45.50% | 33.00% |
+| Germany | 81.85% | 48.84% | 42.90% |
+| Greece | 83.89% | 47.26% | 37.97% |
+| Hungary | 89.68% | 45.40% | 41.74% |
+| Ireland | 66.53% | 66.53% | 66.53% |
+| Italy | 83.53% | 51.87% | 42.15% |
+| Latvia | 97.61% | 86.35% | 59.17% |
+| Lithuania | 89.13% | 70.47% | 43.59% |
+| Netherlands | 71.99% | 41.34% | 26.63% |
+| Norway | 77.22% | 53.16% | 38.48% |
+| Poland | 87.87% | 65.78% | 39.57% |
+| Portugal | 80.63% | 52.43% | 38.64% |
+| Romania | 81.50% | 39.47% | 31.50% |
+| Russia | 89.72% | 75.84% | 49.92% |
+| Serbia | 90.87% | 68.64% | 40.00% |
+| Slovakia | 96.80% | 83.96% | 62.64% |
+| Slovenia | 83.51% | 56.00% | 33.31% |
+| Spain | 86.84% | 69.63% | 58.36% |
+| Sweden | 79.63% | 48.44% | 32.07% |
+| Turkey | 92.56% | 73.73% | 67.63% |
+| UK | 66.53% | 66.53% | 66.53% |
+| US | 66.53% | 66.53% | 66.53% |
+| Ukraine | 98.32% | 91.24% | 65.35% |
 
 ###### Out-of-Domain
 Results per-country are accuracy
