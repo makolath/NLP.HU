@@ -43,12 +43,16 @@ def main(args):
     }
     model = Doc2Vec(**doc2vec_params)
     docs = tagged_document_generator(args.text)
-    model.build_vocab(docs)
+    model.build_vocab(docs, progress_per=100000)
+    model.save('temp_'+args.write)
     docs = tagged_document_generator(args.text)
     try:
         model.train(docs, total_examples=model.corpus_count, epochs=model.epochs)
     except Exception as e:
         logging.exception(e)
+        model.save('exe_'+args.write)
+        raise
+    model.delete_temporary_training_data(keep_doctags_vectors=True, keep_inference=True)
     model.save(args.write)
 
 

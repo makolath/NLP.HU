@@ -9,6 +9,7 @@ import random
 
 import numpy as np
 from gensim.models import KeyedVectors
+from gensim.models.doc2vec import Doc2Vec, TaggedDocument
 from scipy import sparse
 from sklearn import linear_model
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -32,8 +33,9 @@ def parse_args():
     parser.add_argument('-z', '--write-out', type=str, default=None, help='Write out of sample to folder')
     parser.add_argument('-m', '--read-models', action="store_true", default=False, help='Read models from file')
     parser.add_argument('-v', '--model', type=str, default=None, help='Use the word2vec model specified by path')
-    parser.add_argument('-f', '--features', action="append", help='What type of features to use, can be given multiple times for multiple features\nLegal values: bow, pos, char3, fw, w2v', required=True)
+    parser.add_argument('-f', '--features', action="append", help='What type of features to use, can be given multiple times for multiple features\nLegal values: bow, pos, char3, fw, w2v, d2v', required=True)
     parser.add_argument('-b', '--binary-model', action="store_true", default=False, help="Use when the word2vec model is in binary format (.bin)")
+    parser.add_argument('-d', '--doc-model', type=str, default=None, help="Use the doc2vec model specified by path")
     return parser.parse_args()
 
 
@@ -118,6 +120,17 @@ def extract_features_word2vec(paths, word2vec_model, known_words):
     return np.nan_to_num(all_features, copy=False)
 
 
+def extract_features_doc2vec(paths, doc2vec_model):
+    logger.debug("Extracting word2vec features")
+    features = np.zeros((len(paths), 500), dtype=np.float32)            # static 500 until we find a way to extract it without trying to infer a random sentence
+
+    for i, path in enumerate(paths):
+        text = re.split(r'[ |\n]', open(path, 'r', encoding='utf-8').read())
+        features[i] = doc2vec_model.infer_vector(text)
+
+    return np.nan_to_num(features, copy=False)
+
+
 def write_out_features(country, target_is_native, target_lang_family, target_native_lang, features, path="./"):
     logger.debug('Writing country out of sample features')
     logger.debug('Writing to file: ' + path + country + "_features.npz")
@@ -194,6 +207,7 @@ class NLI:
             self.pos_chunks_paths = None
 
         self.vocabs = {}
+        self.doc2vec_model = None
         self.w2v_model = None
         self.known_words = set()
 
@@ -204,6 +218,10 @@ class NLI:
         self.w2v_model = KeyedVectors.load_word2vec_format(model_path, binary=binary_model)
         logger.debug("The word vector size is: " + str(self.w2v_model.vector_size))
         self.known_words = set(self.w2v_model.vocab.keys())
+
+    def load_doc2vec_model(self, doc_model_path):
+        logger.info("Loading doc2vec model from: " + doc_model_path)
+        self.doc2vec_model = Doc2Vec.load(doc_model_path)
 
     def write_in_features(self, file):
         logger.info('Writing in sample features')
@@ -289,6 +307,8 @@ class NLI:
                     features = extract_features_bow(all_text_paths, vocab=self.vocabs['fw'])
                 elif feature_type == 'w2v':
                     features = sparse.csr_matrix(extract_features_word2vec(all_text_paths, self.w2v_model, self.known_words))
+                elif feature_type == 'd2v':
+                    features = sparse.csr_matrix(extract_features_doc2vec(all_text_paths, self.doc2vec_model))
                 else:
                     logger.warning('Unknown features type')
             except MemoryError as me:
@@ -331,6 +351,8 @@ class NLI:
                         features = extract_features_bow(country_text_paths, vocab=self.vocabs['fw'])
                     elif feature_type == 'w2v':
                         features = sparse.csr_matrix(extract_features_word2vec(country_text_paths, self.w2v_model, self.known_words))
+                    elif feature_type == 'd2v':
+                        features = sparse.csr_matrix(extract_features_doc2vec(country_text_paths, self.doc2vec_model))
                     else:
                         logger.warning('Unknown features type')
 
@@ -440,13 +462,15 @@ class NLI:
         self.pos_chunks_paths = new_pos_paths
 
 
-def main(text_source, pos_source, num_threads, load_in, load_out, write_in, write_out, read_model, feature_types, model, binary):
+def main(text_source, pos_source, num_threads, load_in, load_out, write_in, write_out, read_model, feature_types, model, binary, doc_model):
     set_log()
     logger.info('start')
 
     classifier = NLI(text_source, pos_source, num_threads, feature_types)
     if model is not None:
         classifier.load_word2vec_model(model, binary)
+    if doc_model is not None:
+        classifier.load_doc2vec_model(doc_model)
 
     logger.debug('load in from file is: ' + str(load_in))
     if load_in is not None:
@@ -477,4 +501,4 @@ def main(text_source, pos_source, num_threads, load_in, load_out, write_in, writ
 
 if __name__ == '__main__':
     args = parse_args()
-    main(args.text, args.pos, args.threads, args.load_in, args.load_out, args.write_in, args.write_out, args.read_models, args.features, args.model, args.binary_model)
+    main(args.text, args.pos, args.threads, args.load_in, args.load_out, args.write_in, args.write_out, args.read_models, args.features, args.model, args.binary_model, args.doc_model)
