@@ -121,7 +121,7 @@ def extract_features_word2vec(paths, word2vec_model, known_words):
 
 
 def extract_features_doc2vec(paths, doc2vec_model):
-    logger.debug("Extracting word2vec features")
+    logger.debug("Extracting doc2vec features")
     features = np.zeros((len(paths), 500), dtype=np.float32)            # static 500 until we find a way to extract it without trying to infer a random sentence
 
     for i, path in enumerate(paths):
@@ -367,6 +367,8 @@ class NLI:
                 country_features, target_native_lang, target_lang_family, target_is_native = read_country_from_file(load_out, country)
 
             if write_out is not None:
+                fld = os.path.dirname(write_out)
+                os.makedirs(fld, exist_ok=True)
                 write_out_features(country, target_is_native, target_lang_family, target_native_lang, country_features, write_out)
 
             logger.info("testing results of country " + country)
@@ -486,6 +488,8 @@ def main(text_source, pos_source, num_threads, load_in, load_out, write_in, writ
 
     logger.debug('write in to file is: ' + str(write_in))
     if write_in is not None:
+        fld = os.path.dirname(write_in)
+        os.makedirs(fld, exist_ok=True)
         classifier.write_in_features(write_in)
 
     if read_model:

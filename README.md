@@ -7,8 +7,7 @@ vocabularies are available [here](https://drive.google.com/open?id=1Dq1HrPnJX1Lv
 ### Raw data
 raw data used for classification is available [here](https://drive.google.com/drive/folders/125RAHvCIHBR-jAUnIhqzWhdxh0mQ_fcv)
 ### Usage
-The script was tested with python 3.7
-
+The script was tested with python 3.7  
 The script depends on the following modules:
 * NumPy
 * SciPy
@@ -25,20 +24,19 @@ The script depends on command-line arguments to specify certain paths and functi
 * --write-out to write the out of sample matrices to files
 * --read-models to read pre-trained models
 * --model to specify a word2vec model to use with feature type of w2v
+* --doc-model to specify a doc2vec model to use with feature type of d2v
 * --features feature to use for classification (can be given multiple times)
 
 More parameter exists to control behaviors 
 ### Results
-#### Random
+#### Random guess
 Random guess will results the following accuracies:
 * Native Language guess: 3.2%
 * Language Family guess: 20%
 * Is Native Speaker: 50%
 ##### Classifier
-All models were trained using Logistic Regression classifier
-
-The classified unit was constructed of 10 consecutive sentences
-
+All models were trained using Logistic Regression classifier  
+The classified unit was constructed of 10 consecutive sentences  
 Number of units per country for training was 4930
 ##### Countries used
 The following countries data was used
@@ -124,8 +122,7 @@ Results for all countries are ten-fold cross validation
 | Ukraine | 97.11% | 89.31% | 60.91% |
 
 ###### Out-of-Domain
-Results per-country are accuracy
-
+Results per-country are accuracy  
 Combined Accuracy is at the bottom row
 
 | Country | Is Native | Language Family | Native Language | Number of Chunks |
@@ -164,12 +161,10 @@ Combined Accuracy is at the bottom row
 | Ukraine | 87.49% | 63.79% | 22.07% | 120050 |
 | Total | 60.94% | 39.40% | 31.66% | 19892070 |
 
-All the results below are using pre-trained word2vec model
+### All the results below are using pre-trained word2vec model
 #### Google's word2vec
-This word embedding model was pre-trained on the Google News dataset, about 100B words.
-
-The model contains 3M unique words, each with a 300 degrees vector
-
+This word embedding model was pre-trained on the Google News dataset, about 100B words.  
+The model contains 3M unique words, each with a 300 degrees vector  
 The model is available [here](https://code.google.com/archive/p/word2vec/)
 ##### Results
 ###### In-Domain (data from r/europe)
@@ -210,8 +205,7 @@ The model is available [here](https://code.google.com/archive/p/word2vec/)
 | Ukraine | 92.23% | 79.57% | 35.68% |
 
 ###### Out-of-Domain
-Results per-country are accuracy
-
+Results per-country are accuracy  
 Combined Accuracy is at the bottom row
 
 | Country | Is Native | Language Family | Native Language | Number of Chunks |
@@ -251,10 +245,8 @@ Combined Accuracy is at the bottom row
 | Total | 62.82% | 40.51% | 32.38% | 19892070 |
 
 #### fasttex word embedding
-This word embedding model was pre-trained on a Common Crawl, about 600B words.
-
-The model contains 2M unique words, each with a 300 degrees vector
-
+This word embedding model was pre-trained on a Common Crawl, about 600B words.  
+The model contains 2M unique words, each with a 300 degrees vector  
 The model is available [here](https://fasttext.cc/docs/en/english-vectors.html)
 ##### Results
 ###### In-Domain (data from r/europe)
@@ -295,8 +287,7 @@ The model is available [here](https://fasttext.cc/docs/en/english-vectors.html)
 | Ukraine | 94.56% | 83.83% | 53.08% |
 
 ###### Out-of-Domain
-Results per-country are accuracy
-
+Results per-country are accuracy  
 Combined Accuracy is at the bottom row
 
 | Country | Is Native | Language Family | Native Language | Number of Chunks |
@@ -336,10 +327,8 @@ Combined Accuracy is at the bottom row
 | Total | 66.34% | 45.31% | 36.47% | 19892070 |
 
 #### glove word embedding
-This word embedding model was pre-trained on a Common Crawl, about 840B words.
-
-The model contains 2.2M unique words, each with a 300 degrees vector
-
+This word embedding model was pre-trained on a Common Crawl, about 840B words.  
+The model contains 2.2M unique words, each with a 300 degrees vector  
 The model is available [here](https://nlp.stanford.edu/projects/glove/)
 ##### Results
 ###### In-Domain (data from r/europe)
@@ -423,7 +412,7 @@ Combined Accuracy is at the bottom row
 
 #### Doc2Vec
 The following results were acquired using gensim's doc2vec implementation  
-The Doc2Vec model was trained by us on all the text data available from the text chunks  
+The Doc2Vec model was trained by us on all the text data of the in-domain chunks    
 Each sentence was fed into the model for training, no extra pre-processing was done  
 The model contains a 500 degrees vector for each sentence  
 This method obvious drawback is the model was fed sentences for training, but paragraphs of unrelated sentences for inference
