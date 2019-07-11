@@ -1,11 +1,11 @@
 import os
 import argparse
 import glob
-import time
+import logging
 from gensim.models.doc2vec import Doc2Vec, TaggedDocument
 
 
-start = time.time()
+logging.basicConfig(format="%(asctime)-15s %(levelname)-8s %(message)s", level=logging.DEBUG)
 
 
 def parse_args():
@@ -16,23 +16,18 @@ def parse_args():
     return parser.parse_args()
 
 
-def time_to_str(t):
-    h = int(t) // 3600
-    m = (int(t) - h * 3600) // 60
-    s = t - h * 3600 - m * 60
-    return str(h) + ":" + str(m) + ":" + str(s)
-
-
-def tagged_document_generator(path, prefix=''):
+def tagged_document_generator(path):
     file_generator = glob.iglob(os.path.join(path, '**', 'chunk*'), recursive=True)
     i = 0
     for f in file_generator:
-        if i % 10000 == 0:
-            print(prefix + ' line ' + str(i) + ' elapsed: ' + time_to_str(time.time()-start))
-        with open(f, 'rt', encoding='utf-8') as fh:
-            for line in fh:
-                i += 1
-                yield TaggedDocument(words=line, tags=str(i))
+        try :
+            with open(f, 'rt', encoding='utf-8') as fh:
+                for line in fh:
+                    yield TaggedDocument(words=line.split(), tags=[i])
+                    i += 1
+        except PermissionError as e:
+            logging.exception(e)
+            continue
 
 
 def main(args):
@@ -47,13 +42,16 @@ def main(args):
         'dm_mean': 1,
     }
     model = Doc2Vec(**doc2vec_params)
-    docs = tagged_document_generator(args.text, 'vocab')
+    docs = tagged_document_generator(args.text)
     model.build_vocab(docs)
-    docs = tagged_document_generator(args.text, 'train')
-    model.train(docs, total_examples=model.corpus_count, epochs=model.epochs)
+    docs = tagged_document_generator(args.text)
+    try:
+        model.train(docs, total_examples=model.corpus_count, epochs=model.epochs)
+    except Exception as e:
+        logging.exception(e)
     model.save(args.write)
 
 
 if __name__ == '__main__':
-    args = parse_args()
-    main(args)
+    arg = parse_args()
+    main(arg)

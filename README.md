@@ -420,3 +420,90 @@ Combined Accuracy is at the bottom row
 | US | 51.55% | 51.55% | 51.55% | 5436530 |
 | Ukraine | 85.99% | 64.38% | 25.78% | 120050 |
 | Total | 64.13% | 43.74% | 36.09% | 19892070 |
+
+#### Doc2Vec
+The following results were acquired using gensim's doc2vec implementation  
+The Doc2Vec model was trained by us on all the text data available from the text chunks  
+Each sentence was fed into the model for training, no extra pre-processing was done  
+The model contains a 500 degrees vector for each sentence  
+This method obvious drawback is the model was fed sentences for training, but paragraphs of unrelated sentences for inference
+
+#### Results
+###### In-Domain (data from r/europe)
+
+| Country | Is Native | Language Family | Native Language |
+| --- | :---: | :---: | :---: |
+| All | | | | - |
+| Australia | | | |
+| Austria | | | |
+| Bosnia | | | |
+| Bulgaria | | | |
+| Croatia | | | |
+| Czech Republic | | | |
+| Denmark | | | |
+| Estonia| | | |
+| Finland | | | |
+| France | | | |
+| Germany | | | |
+| Greece | | | |
+| Hungary | | | |
+| Ireland | | | |
+| Italy | | | |
+| Latvia | | | |
+| Lithuania | | | |
+| Netherlands | | | |
+| Norway | | | |
+| Poland | | | |
+| Portugal | | | |
+| Romania | | | |
+| Russia | | | |
+| Serbia | | | |
+| Slovakia | | | |
+| Slovenia | | | |
+| Spain | | | |
+| Sweden | | | |
+| Turkey | | | |
+| UK | | | |
+| US | | | |
+| Ukraine | | | |
+
+###### Out-of-Domain
+Results per-country are accuracy
+
+Combined Accuracy is at the bottom row
+
+| Country | Is Native | Language Family | Native Language | Number of Chunks |
+| --- | :---: | :---: | :---: | :---: |
+| Australia | | | | 421020 |
+| Austria | | | | 294280 |
+| Bosnia | | | | 71010 |
+| Bulgaria | | | | 119990 |
+| Croatia | | | | 143900 |
+| Czech Republic | | | | 175320 |
+| Denmark | | | | 681270 |
+| Estonia | | | | 110720 |
+| Finland | | | | 575030 |
+| France | | | | 560100 |
+| Germany | | | | 1587250 |
+| Greece | | | | 205540 |
+| Hungary | | | | 144520 |
+| Ireland | | | | 919200 |
+| Italy | | | | 246910 |
+| Latvia | | | | 90890 |
+| Lithuania | | | | 135670 |
+| Netherlands | | | | 1246100 |
+| Norway | | | | 413880 |
+| Poland | | | | 437470 |
+| Portugal | | | | 311950 |
+| Romania | | | | 292770 |
+| Russia | | | | 162160 |
+| Serbia | | | | 105890 |
+| Slovakia | | | | 110050 |
+| Slovenia | | | | 73020 |
+| Spain | | | | 330950 |
+| Sweden | | | | 772480 |
+| Turkey | | | | 177940 |
+| UK | | | | 3418210 |
+| US | | | | 5436530 |
+| Ukraine | | | | 120050 |
+| Total | | | | 19892070 |
