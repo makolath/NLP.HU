@@ -9,7 +9,7 @@ import random
 
 import numpy as np
 from gensim.models import KeyedVectors
-from gensim.models.doc2vec import Doc2Vec, TaggedDocument
+from gensim.models.doc2vec import Doc2Vec
 from scipy import sparse
 from sklearn import linear_model
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -272,7 +272,7 @@ class NLI:
 
     def read_vocabs(self):
         for feature_type in self.feature_types:
-            if feature_type != 'w2v':
+            if feature_type != 'w2v' and feature_type != 'd2v':
                 filename = feature_type + '_vocab.pkl'
                 logger.debug('reading ' + filename)
                 f = open(filename, 'rb')

@@ -415,7 +415,8 @@ The following results were acquired using gensim's doc2vec implementation
 The Doc2Vec model was trained by us on all the text data of the in-domain chunks    
 Each sentence was fed into the model for training, no extra pre-processing was done  
 The model contains a 500 degrees vector for each sentence  
-This method obvious drawback is the model was fed sentences for training, but paragraphs of unrelated sentences for inference
+This method obvious drawback is the model was fed sentences for training, but paragraphs of unrelated sentences for inference  
+The total number of words that were fed to the model was 139134960 and a total of 967823 unique words
 
 #### Results
 ###### In-Domain (data from r/europe)
@@ -463,36 +464,36 @@ Combined Accuracy is at the bottom row
 
 | Country | Is Native | Language Family | Native Language | Number of Chunks |
 | --- | :---: | :---: | :---: | :---: |
-| Australia | | | | 421020 |
-| Austria | | | | 294280 |
-| Bosnia | | | | 71010 |
-| Bulgaria | | | | 119990 |
-| Croatia | | | | 143900 |
-| Czech Republic | | | | 175320 |
-| Denmark | | | | 681270 |
-| Estonia | | | | 110720 |
-| Finland | | | | 575030 |
-| France | | | | 560100 |
-| Germany | | | | 1587250 |
-| Greece | | | | 205540 |
-| Hungary | | | | 144520 |
-| Ireland | | | | 919200 |
-| Italy | | | | 246910 |
-| Latvia | | | | 90890 |
-| Lithuania | | | | 135670 |
-| Netherlands | | | | 1246100 |
-| Norway | | | | 413880 |
-| Poland | | | | 437470 |
-| Portugal | | | | 311950 |
-| Romania | | | | 292770 |
-| Russia | | | | 162160 |
-| Serbia | | | | 105890 |
-| Slovakia | | | | 110050 |
-| Slovenia | | | | 73020 |
-| Spain | | | | 330950 |
-| Sweden | | | | 772480 |
-| Turkey | | | | 177940 |
-| UK | | | | 3418210 |
-| US | | | | 5436530 |
-| Ukraine | | | | 120050 |
-| Total | | | | 19892070 |
+| Australia | 54.61% | 54.61% | 54.61% | 421020 |
+| Austria | 75.86% | 34.17% | 26.20% | 294280 |
+| Bosnia | 89.66% | 63.70% | 17.65% | 71010 |
+| Bulgaria | 71.35% | 30.02% | 5.36% | 119990 |
+| Croatia | 73.91% | 38.52% | 9.84% | 143900 |
+| Czech Republic | 73.59% | 35.38% | 6.23% | 175320 |
+| Denmark | 90.13% | 41.64% | 34.73% | 681270 |
+| Estonia | 72.51% | 33.77% | 7.53% | 110720 |
+| Finland | 72.10% | 17.19% | 12.21% | 575030 |
+| France | 72.51% | 25.79% | 15.94% | 560100 |
+| Germany | 75.92% | 35.44% | 27.40% | 1587250 |
+| Greece | 72.32% | 17.31% | 9.51% | 205540 |
+| Hungary | 75.24% | 16.28% | 9.66% | 144520 |
+| Ireland | 60.02% | 60.02% | 60.02% | 919200 |
+| Italy | 73.55% | 25.96% | 13.84% | 246910 |
+| Latvia | 93.27% | 68.88% | 23.43% | 90890 |
+| Lithuania | 76.68% | 39.76% | 11.22% | 135670 |
+| Netherlands | 67.23% | 29.01% | 10.01% | 1246100 |
+| Norway | 68.87% | 31.04% | 12.39% | 413880 |
+| Poland | 75.31% | 40.69% | 13.76% | 437470 |
+| Portugal | 72.63% | 25.87% | 12.27% | 311950 |
+| Romania | 74.87% | 18.72% | 7.08% | 292770 |
+| Russia | 72.32% | 42.50% | 17.13% | 162160 |
+| Serbia | 73.95% | 38.24% | 7.97% | 105890 |
+| Slovakia | 75.92% | 35.31% | 12.44% | 110050 |
+| Slovenia | 75.92% | 35.31% | 12.44% | 73020 |
+| Spain | 68.52% | 26.88% | 14.17% | 330950 |
+| Sweden | 68.92% | 29.89% | 9.62% | 772480 |
+| Turkey | 77.86% | 35.09% | 28.31% | 177940 |
+| UK | 61.74% | 61.74% | 61.74% | 3418210 |
+| US | 57.8% | 57.8% | 57.8% | 5436530 |
+| Ukraine | 94.20% | 71.54% | 31.44% | 120050 |
+| Total | 66.52% | 45.97% | 98.52% | 19892070 |
