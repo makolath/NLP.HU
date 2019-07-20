@@ -114,7 +114,7 @@ Results for all countries are ten-fold cross validation
 | Serbia | 87.80% | 63.89% | 38.64% |
 | Slovakia | 95.27% | 80.28% | 55.78% |
 | Slovenia | 84.74% | 55.78% | 30.91% |
-| Spain | 53.34% | 63.89% | 85.74% |
+| Spain | 85.74% | 63.89% | 53.34% |
 | Sweden | 77.26% | 48.19% | 32.04% |
 | Turkey | 92.61% | 70.34% | 63.56% |
 | UK | 69.25% | 69.25% | 69.25% |
