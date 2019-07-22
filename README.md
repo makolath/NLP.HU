@@ -96,7 +96,7 @@ Results for all countries are ten-fold cross validation
 | Czech Republic | 87.78% | 59.41% | 38.01% |
 | Denmark | 89.95% | 63.50% | 56.22% |
 | Estonia| 88.37% | 66.83% | 44.82% |
-| Finland | 82.59% | 42.61% | 37.665 |
+| Finland | 82.59% | 42.61% | 37.66% |
 | France | 77.30% | 47.64% | 35.37% |
 | Germany | 83.54% | 53.66% | 48.49% |
 | Greece | 85.05% | 49.95% | 41.54% |
