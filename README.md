@@ -106,7 +106,7 @@ Results for all countries are ten-fold cross validation
 | Latvia | 94.80% | 83.20% | 57.68% |
 | Lithuania | 91.80% | 72.55% | 46.30% |
 | Netherlands | 72.94% | 42.04% | 26.22% |
-| Norway | 77.24% | 53.04% | 37.605% |
+| Norway | 77.24% | 53.04% | 37.60% |
 | Poland | 89.33% | 66.30% | 41.21% |
 | Portugal | 80.52% | 50.75% | 39.10% | 
 | Romania | 80.54% | 41.58% | 32.19% |
